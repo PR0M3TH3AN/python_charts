@@ -70,6 +70,9 @@ Downloads UNRATE and WTI series (from 1948 to today) into `data/fred.db`.
 ./startup.sh --offset 6 --start 1980-01-01 --end 2025-05-31 --extend-years 2
 ```
 
+The plotting script validates that both series contain data for the
+requested period before rendering the chart.
+
 | Option           | Description                                     |
 | ---------------- | ----------------------------------------------- |
 | `--offset`       | Lag in months (pos = oil leads; neg = oil lags) |

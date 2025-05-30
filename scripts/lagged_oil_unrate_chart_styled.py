@@ -2,8 +2,10 @@
 """
 lagged_oil_unrate_chart_styled.py
 ---------------------------------
-Offline version: reads UNRATE & WTI series from data/fred.db (populated
-by scripts/refresh_data.py) and plots them with a configurable lag.
+Offline version: reads UNRATE & WTI series from ``data/fred.db``
+(populated by ``scripts/refresh_data.py``), validates that both series
+contain data for the requested period, and plots them with a configurable
+lag.
 
 Usage
 -----
@@ -71,6 +73,44 @@ def fetch_series(
     # Ensure UNRATE is at month-end, too
     unrate.index = unrate.index.to_period("M").to_timestamp("M")
     return unrate, oil_monthly
+
+
+def validate_series(unrate: pd.DataFrame, oil: pd.DataFrame) -> None:
+    """Sanity-check the fetched series before plotting.
+
+    Both dataframes must contain a ``value`` column with no missing values and
+    share a non-empty ``DatetimeIndex`` covering the same start and end dates.
+
+    Parameters
+    ----------
+    unrate, oil:
+        DataFrames returned by :func:`fetch_series`.
+
+    Raises
+    ------
+    ValueError
+        If either dataframe is empty, missing the ``value`` column, contains
+        nulls, or the date indexes do not span the same range.
+    """
+
+    if unrate.empty:
+        raise ValueError("UNRATE dataframe is empty")
+    if oil.empty:
+        raise ValueError("DCOILWTICO dataframe is empty")
+
+    for name, df in [("UNRATE", unrate), ("DCOILWTICO", oil)]:
+        if "value" not in df.columns:
+            raise ValueError(f"{name} missing 'value' column")
+        if df["value"].isna().any():
+            raise ValueError(f"{name} contains null values")
+
+    if not isinstance(unrate.index, pd.DatetimeIndex) or not isinstance(
+        oil.index, pd.DatetimeIndex
+    ):
+        raise ValueError("Indexes must be DatetimeIndex")
+
+    if unrate.index.min() != oil.index.min() or unrate.index.max() != oil.index.max():
+        raise ValueError("Series indexes do not span the same date range")
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -212,6 +252,7 @@ def main() -> None:
     end_dt = datetime.fromisoformat(args.end)
 
     unrate, oil = fetch_series(start_dt, end_dt, args.db)
+    validate_series(unrate, oil)
     plot_lagged(unrate, oil, args.offset, start_dt, end_dt, args.extend_years)
 
 
