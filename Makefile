@@ -1,29 +1,26 @@
-# Makefile for python_charts
-# Defines standard targets for Codex/CI to use startup.sh
+.PHONY: install data plot plot-custom test clean
 
-.PHONY: install data plot test clean
-
-# Install dependencies into venv and prepare data
+# Install dependencies & fetch data
 install:
-	./startup.sh pip install
+	./startup.sh
 
 # Download FRED data (if needed)
 data:
 	./startup.sh scripts/refresh_data.py
 
-# Generate the default chart (18-month lag)
+# Default 18-month lag plot
 plot:
 	./startup.sh
 
-# Generate a custom chart	
-# Usage: make plot ARGS="--offset 12 --end 2025-05-31 --extend-years 5"
+# Custom plot
+# Usage: make plot-custom ARGS="--offset 12 --end 2025-05-31 --extend-years 5"
 plot-custom:
 	./startup.sh $(ARGS)
 
-# Run test suite
+# Run tests
 test:
 	./startup.sh pytest -q
 
-# Remove virtual environment and outputs
+# Clean up any outputs (no venv to delete)
 clean:
-	rm -rf venv data outputs
+	rm -rf outputs
