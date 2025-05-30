@@ -1,19 +1,14 @@
+Here’s the fully updated `scripts/lagged_oil_unrate_chart_styled.py`. You can copy–paste it in place of your existing file.
+
+```python
 #!/usr/bin/env python3
 """
 lagged_oil_unrate_chart_styled.py
 ---------------------------------
 Offline version: reads UNRATE & WTI series from ``data/fred.db``
 (populated by ``scripts/refresh_data.py``), validates that both series
-contain data for the requested period, and plots them with a configurable
-lag.
-
-Usage
------
-  python scripts/lagged_oil_unrate_chart_styled.py \
-      --offset 18 \
-      --start 1973-01-01 \
-      --end   2025-05-31 \
-      --extend-years 3
+contain data for the requested period (overlap only), and plots them
+with a configurable lag.
 """
 
 from __future__ import annotations
@@ -76,23 +71,12 @@ def fetch_series(
 
 
 def validate_series(unrate: pd.DataFrame, oil: pd.DataFrame) -> None:
-    """Sanity-check the fetched series before plotting.
-
-    Both dataframes must contain a ``value`` column with no missing values and
-    share a non-empty ``DatetimeIndex`` covering the same start and end dates.
-
-    Parameters
-    ----------
-    unrate, oil:
-        DataFrames returned by :func:`fetch_series`.
-
-    Raises
-    ------
-    ValueError
-        If either dataframe is empty, missing the ``value`` column, contains
-        nulls, or the date indexes do not span the same range.
     """
+    Sanity-check the fetched series before plotting.
 
+    Both dataframes must contain a ``value`` column with no missing values
+    and share a non-empty overlapping date range.
+    """
     if unrate.empty:
         raise ValueError("UNRATE dataframe is empty")
     if oil.empty:
@@ -109,8 +93,12 @@ def validate_series(unrate: pd.DataFrame, oil: pd.DataFrame) -> None:
     ):
         raise ValueError("Indexes must be DatetimeIndex")
 
-    if unrate.index.min() != oil.index.min() or unrate.index.max() != oil.index.max():
-        raise ValueError("Series indexes do not span the same date range")
+    # Replace strict range check with overlap check
+    overlap_start = max(unrate.index.min(), oil.index.min())
+    overlap_end = min(unrate.index.max(), oil.index.max())
+
+    if overlap_start >= overlap_end:
+        raise ValueError("Series have no overlapping date range")
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -120,12 +108,28 @@ def plot_lagged(
     unrate: pd.DataFrame,
     oil: pd.DataFrame,
     offset_months: int,
-    start_date: datetime,
-    end_date: datetime,
+    _start_date: datetime,
+    _end_date: datetime,
     extend_years: int,
 ) -> None:
-    """Render the dual-axis chart with fixed scales and log ticks on oil."""
-    oil_shifted = oil.shift(offset_months)
+    """
+    Render the dual-axis chart with fixed scales and log ticks on oil.
+    Trims both series to their overlapping date range before shifting.
+    """
+    # Find overlapping date range
+    common_start = max(unrate.index.min(), oil.index.min())
+    common_end = min(unrate.index.max(), oil.index.max())
+
+    print(f"⚠️ Using overlapping range: {common_start.date()} to {common_end.date()}")
+    print(f"  - UNRATE range: {unrate.index.min().date()} to {unrate.index.max().date()}")
+    print(f"  - OIL range: {oil.index.min().date()} to {oil.index.max().date()}")
+
+    # Trim series to common range
+    unrate_common = unrate.loc[common_start:common_end]
+    oil_common = oil.loc[common_start:common_end]
+
+    # Apply lag/lead
+    oil_shifted = oil_common.shift(offset_months)
 
     fig, ax1 = plt.subplots(figsize=(14, 7))
     plt.title("Unemployment Rate and US Oil Price", fontsize=20, weight="bold")
@@ -137,8 +141,8 @@ def plot_lagged(
 
     # Left axis – UNRATE
     ax1.plot(
-        unrate.index,
-        unrate["value"],
+        unrate_common.index,
+        unrate_common["value"],
         label="UNRATE (LHS)",
         linewidth=2.5,
         color="#1f77b4",
@@ -177,8 +181,8 @@ def plot_lagged(
     ax2.set_yticks(ticks)
     ax2.yaxis.set_major_formatter("${x:.0f}")
 
-    # X-axis formatting
-    ax1.set_xlim(start_date, end_date + relativedelta(years=extend_years))
+    # X-axis formatting using common range
+    ax1.set_xlim(common_start, common_end + relativedelta(years=extend_years))
     ax1.xaxis.set_major_locator(mdates.YearLocator(base=5))
     ax1.xaxis.set_minor_locator(mdates.YearLocator(1))
     ax1.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
@@ -189,11 +193,11 @@ def plot_lagged(
     l2, l2l = ax2.get_legend_handles_labels()
     ax1.legend(lines + l2, labels + l2l, loc="upper left", frameon=False, fontsize=12)
 
-    # Footnote
+    # Footnote with actual ranges
     foot = (
-        f"Dates: {start_date.strftime('%Y')} through "
-        f"{unrate.index[-1].strftime('%d %b %Y')}\."
-        "\nSource: Local FRED snapshot (offline)."
+        f"UNRATE: {unrate.index.min().strftime('%b %Y')}–{unrate.index.max().strftime('%b %Y')} | "
+        f"OIL: {oil.index.min().strftime('%b %Y')}–{oil.index.max().strftime('%b %Y')}\n"
+        "Source: Local FRED snapshot (offline)."
     )
     plt.annotate(
         foot,
@@ -258,3 +262,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+```
