@@ -22,6 +22,8 @@ from pathlib import Path
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+import numpy as np
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 import sqlite3
@@ -82,7 +84,7 @@ def plot_lagged(
     end_date: datetime,
     extend_years: int,
 ) -> None:
-    """Render the dual-axis chart."""
+    """Render the dual-axis chart with fixed scales and log ticks on oil."""
     oil_shifted = oil.shift(offset_months)
 
     fig, ax1 = plt.subplots(figsize=(14, 7))
@@ -102,11 +104,12 @@ def plot_lagged(
         color="#1f77b4",
     )
     ax1.set_ylabel("Unemployment rate (%)", fontsize=12)
-    ax1.set_ylim(0, unrate["value"].max() * 1.1)
+    ax1.set_ylim(3, 15)
+    ax1.yaxis.set_major_locator(mticker.MultipleLocator(2))
     ax1.yaxis.set_major_formatter("{x:.0f}%")
     ax1.grid(axis="y", linestyle="--", alpha=0.4)
 
-    # Right axis – shifted oil
+    # Right axis – shifted oil (log scale)
     ax2 = ax1.twinx()
     ax2.plot(
         oil_shifted.index,
@@ -118,10 +121,23 @@ def plot_lagged(
         color="#FF9900",
     )
     ax2.set_ylabel("Oil price (USD)", fontsize=12)
-    ax2.set_ylim(0, oil_shifted["value"].max() * 1.1)
-    ax2.yaxis.set_major_formatter("${x:,.0f}")
 
-    # X-axis
+    # Build doubling ticks from $3 upward
+    min_tick = 3
+    max_val = oil_shifted["value"].max() * 1.1
+    ticks = []
+    i = 0
+    while min_tick * 2**i < max_val:
+        ticks.append(min_tick * 2**i)
+        i += 1
+    ticks.append(min_tick * 2**i)
+
+    ax2.set_yscale("log")
+    ax2.set_ylim(min_tick, ticks[-1])
+    ax2.set_yticks(ticks)
+    ax2.yaxis.set_major_formatter("${x:.0f}")
+
+    # X-axis formatting
     ax1.set_xlim(start_date, end_date + relativedelta(years=extend_years))
     ax1.xaxis.set_major_locator(mdates.YearLocator(base=5))
     ax1.xaxis.set_minor_locator(mdates.YearLocator(1))
@@ -136,8 +152,8 @@ def plot_lagged(
     # Footnote
     foot = (
         f"Dates: {start_date.strftime('%Y')} through "
-        f"{unrate.index[-1].strftime('%d %b %Y')}.\n"
-        "Source: Local FRED snapshot (offline)."
+        f"{unrate.index[-1].strftime('%d %b %Y')}\."
+        "\nSource: Local FRED snapshot (offline)."
     )
     plt.annotate(
         foot,

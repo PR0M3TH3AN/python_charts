@@ -6,6 +6,8 @@ Generated on: 2025-05-30
 
 ```
 .
+    ├── data/
+        ├── fred.db
     ├── scripts/
         ├── lagged_oil_unrate_chart_styled.py
         ├── pyproject.toml
@@ -19,126 +21,8 @@ Generated on: 2025-05-30
 
 ## python_charts/README.md
 ```markdown
-# Lagged Oil vs. Unemployment Charting
-
-This repository provides two Python scripts to fetch the latest US Unemployment Rate (UNRATE) and WTI crude oil price (DCOILWTICO) from FRED, apply a configurable lag or lead to the oil series, and generate polished dual‑axis charts.
-
-## Files
-
-* **`lagged_oil_unrate_chart.py`**
-  A lightweight script that:
-
-  1. Downloads monthly UNRATE and averages daily WTI to monthly.
-  2. Shifts the oil series by `N` months (default = 18).
-  3. Plots both series on a dual‑axis Matplotlib chart.
-
-* **`lagged_oil_unrate_chart_styled.py`**
-  A more polished version that adds:
-
-  * Title, subtitle, footnote with date range and source.
-  * Clean dual‑axis styling with percentage and dollar‑format ticks.
-  * Customizable date range and extended x‑axis (e.g., 1973–2028).
-  * CLI flags for offset, start/end dates, and axis extension.
-
-* **`requirements.txt`**
-  Lists all Python dependencies for both scripts.
-
-## Prerequisites
-
-* Python 3.7 or later
-* Internet connection (to fetch data from FRED)
-
-## Setup
-
-Clone or download this repository:
-
-```bash
-git clone https://your-repo-url.git
-cd your-repo-folder
-```
-
-### Create a Virtual Environment & Install Dependencies
-
-#### On Linux / macOS
-
-```bash
-# 1. Create a venv
-python3 -m venv venv
-
-# 2. Activate it
-source venv/bin/activate
-
-# 3. Upgrade pip and install requirements
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-#### On Windows (PowerShell)
-
-```powershell
-# 1. Create a venv
-python -m venv venv
-
-# 2. Activate it
-venv\Scripts\Activate.ps1
-
-# 3. Upgrade pip and install requirements
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-> **Note:** If you get execution policy errors on Windows, you may need to run:
->
-> ```powershell
-> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-> ```
-
-## Usage
-
-Once the virtual environment is active and dependencies are installed, run either script from the project root.
-
-### 1. Basic Lag Script
-
-```bash
-# Default: oil lags unemployment by 18 months (~1.5 years)
-python lagged_oil_unrate_chart.py
-
-# Other offsets (in months)
-python lagged_oil_unrate_chart.py --offset 6    # 6‑month lag
-python lagged_oil_unrate_chart.py --offset -12  # 12‑month lead
-```
-
-### 2. Styled & Configurable Chart
-
-```bash
-python lagged_oil_unrate_chart_styled.py \
-    --offset 18 \
-    --start 1973-01-01 \
-    --end 2025-05-31 \
-    --extend-years 3
-```
-
-| Flag               | Description                                                    |
-| ------------------ | -------------------------------------------------------------- |
-| `--offset N`       | Lag (positive) or lead (negative) in months (default = 18)     |
-| `--start DATE`     | Series start date (`YYYY-MM-DD`, default = `1973-01-01`)       |
-| `--end DATE`       | Series end date (`YYYY-MM-DD`, default = today)                |
-| `--extend-years M` | How many years beyond `end` to extend the x‑axis (default = 3) |
-
-## Customization
-
-* **Normalization**: Insert a normalization step (e.g., percent change from a base date).
-* **Export**: Modify the script to save figures with `plt.savefig('chart.png', dpi=300)`.
-* **Statistics**: Add `ta.correl()` or use Pandas to compute rolling correlations.
-
-## Troubleshooting
-
-* **"ModuleNotFoundError"**: Ensure your venv is activated, then reinstall dependencies.
-* **SSL/DataReader errors**: Upgrade `pandas_datareader` or switch to an alternate data source.
-
-## License
-
-This project is released under the MIT License.
+./startup.sh python scripts/lagged_oil_unrate_chart_styled.py \
+  --offset 12 --end 2025-05-31 --extend-years 5
 
 ```
 
@@ -155,15 +39,66 @@ python-dateutil>=2.8.1
 ## python_charts/startup.sh
 ```
 #!/usr/bin/env bash
+# -------------------------------------------------------------------
+# startup.sh  — prepare Python env, ensure dependencies, FRED data,
+#              and run a command inside the venv
+# Usage:
+#   ./startup.sh [command…]
+# Automatically:
+#  - Upgrades pip & setuptools (ensuring distutils on Python 3.12+)
+#  - Creates venv if missing
+#  - Installs requirements
+#  - Downloads data/fred.db if missing
+# -------------------------------------------------------------------
 set -euo pipefail
 
-python3 -m venv venv
-source venv/bin/activate
+VENV_DIR="venv"
+REQ_FILE="requirements.txt"
+WHEELHOUSE="wheelhouse"
+DATA_DB="data/fred.db"
 
-pip install --no-index --find-links=wheelhouse -r requirements.txt
+# 1) Create or reuse venv
+if [[ ! -d "$VENV_DIR" ]]; then
+  echo "🔧 Creating virtual-env…"
+  python3 -m venv "$VENV_DIR"
+fi
+# Activate
+# shellcheck disable=SC1090
+source "$VENV_DIR/bin/activate"
 
-echo "✅  Virtual-env ready (offline install)."
+# 2) Upgrade pip & setuptools (to provide distutils on Py3.12+)
+echo "🛠 Upgrading pip & setuptools…"
+pip install --upgrade pip setuptools
 
+# 3) Install project dependencies
+PIP_OPTS=(install --upgrade --no-input)
+if [[ -d "$WHEELHOUSE" ]]; then
+  echo "📦 Installing from wheelhouse…"
+  pip "${PIP_OPTS[@]}" --no-index --find-links="$WHEELHOUSE" -r "$REQ_FILE" \
+    || { echo "⚠️ Wheelhouse failed—falling back to PyPI…"; \
+         pip "${PIP_OPTS[@]}" -r "$REQ_FILE"; }
+else
+  echo "🌐 Installing from PyPI…"
+  pip "${PIP_OPTS[@]}" -r "$REQ_FILE"
+fi
+
+echo "✅ Virtual-env ready ($(python -V))"
+
+# 4) Ensure data/fred.db exists
+if [[ ! -f "$DATA_DB" ]]; then
+  echo "🔄 $DATA_DB not found—downloading FRED series…"
+  python scripts/refresh_data.py
+fi
+
+# 5) Decide what to run
+if [[ $# -gt 0 ]]; then
+  CMD=("$@")
+else
+  CMD=(python scripts/lagged_oil_unrate_chart_styled.py --offset 18)
+fi
+
+echo "🚀 Executing: ${CMD[*]}"
+exec "${CMD[@]}"
 ```
 
 ## scripts/refresh_data.py
@@ -253,6 +188,8 @@ from pathlib import Path
 
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+import numpy as np
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 import sqlite3
@@ -313,7 +250,7 @@ def plot_lagged(
     end_date: datetime,
     extend_years: int,
 ) -> None:
-    """Render the dual-axis chart."""
+    """Render the dual-axis chart with fixed scales and log ticks on oil."""
     oil_shifted = oil.shift(offset_months)
 
     fig, ax1 = plt.subplots(figsize=(14, 7))
@@ -333,11 +270,12 @@ def plot_lagged(
         color="#1f77b4",
     )
     ax1.set_ylabel("Unemployment rate (%)", fontsize=12)
-    ax1.set_ylim(0, unrate["value"].max() * 1.1)
+    ax1.set_ylim(3, 15)
+    ax1.yaxis.set_major_locator(mticker.MultipleLocator(2))
     ax1.yaxis.set_major_formatter("{x:.0f}%")
     ax1.grid(axis="y", linestyle="--", alpha=0.4)
 
-    # Right axis – shifted oil
+    # Right axis – shifted oil (log scale)
     ax2 = ax1.twinx()
     ax2.plot(
         oil_shifted.index,
@@ -349,10 +287,23 @@ def plot_lagged(
         color="#FF9900",
     )
     ax2.set_ylabel("Oil price (USD)", fontsize=12)
-    ax2.set_ylim(0, oil_shifted["value"].max() * 1.1)
-    ax2.yaxis.set_major_formatter("${x:,.0f}")
 
-    # X-axis
+    # Build doubling ticks from $3 upward
+    min_tick = 3
+    max_val = oil_shifted["value"].max() * 1.1
+    ticks = []
+    i = 0
+    while min_tick * 2**i < max_val:
+        ticks.append(min_tick * 2**i)
+        i += 1
+    ticks.append(min_tick * 2**i)
+
+    ax2.set_yscale("log")
+    ax2.set_ylim(min_tick, ticks[-1])
+    ax2.set_yticks(ticks)
+    ax2.yaxis.set_major_formatter("${x:.0f}")
+
+    # X-axis formatting
     ax1.set_xlim(start_date, end_date + relativedelta(years=extend_years))
     ax1.xaxis.set_major_locator(mdates.YearLocator(base=5))
     ax1.xaxis.set_minor_locator(mdates.YearLocator(1))
@@ -367,8 +318,8 @@ def plot_lagged(
     # Footnote
     foot = (
         f"Dates: {start_date.strftime('%Y')} through "
-        f"{unrate.index[-1].strftime('%d %b %Y')}.\n"
-        "Source: Local FRED snapshot (offline)."
+        f"{unrate.index[-1].strftime('%d %b %Y')}\."
+        "\nSource: Local FRED snapshot (offline)."
     )
     plt.annotate(
         foot,
@@ -432,6 +383,12 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+```
+
+## data/fred.db
+```
+*Binary file (.db) cannot be displayed.*
 
 ```
 

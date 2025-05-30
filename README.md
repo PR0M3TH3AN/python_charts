@@ -1,190 +1,138 @@
-# RePrompt – Repository-Context Generator
+# Lagged Oil–Unemployment Chart
 
-**RePrompt** creates a single `repo-context.txt` file that gives AI coding assistants
-(e.g. ChatGPT) a concise, opinionated snapshot of your repository.  
-It combines an overview, directory tree, highlighted file contents, and optional static
-sections such as to-do lists—all configurable through a Streamlit UI.
+A self-contained toolkit that:
 
-> **Works great with**  
-> [mckaywrigley’s XML parser](https://github.com/mckaywrigley/o1-xml-parser/tree/main).
+* Fetches U.S. unemployment rate (UNRATE) and WTI crude oil price (DCOILWTICO) from FRED
+* Stores the series in a local SQLite database (`data/fred.db`)
+* Produces a dual-axis plot of unemployment vs. lagged oil price, with customizable lag, date range, and styling
 
----
-
-## ✨ Features
-
-| Category | What it does |
-|----------|--------------|
-| **Streamlit UI** | Choose a target repo, set include/exclude rules, and generate the context file in one screen. |
-| **Context builder** | Produces `repo-context.txt` tailored for AI assistants. |
-| **Configurable tree** | Exclude or include directories/files interactively (defaults skip noisy folders like `node_modules`, `.git`, etc.). |
-| **File highlights** | Embeds syntax-highlighted contents of “important” files you pick. |
-| **Static sections** | Auto-appends `overview.txt`, `to-do_list.txt`, or any custom text snippets. |
-| **Save & load config** | Persist your include/exclude selections for future sessions. |
+![Example chart](scripts/lagged_oil_unrate_chart_styled.py)
 
 ---
 
-## 🛠 Prerequisites
-
-* **Python 3.7 +** – [download](https://www.python.org/downloads/)  
-* **Git** – [download](https://git-scm.com/downloads)
-
----
-
-## 🗂 Directory layout
-
-```
-
-RePrompt/
-├── src/
-│   ├── app.py                   # Streamlit entry-point
-│   ├── generate\_repo\_context.py # Core context-builder
-│   ├── config.yaml              # Default config (auto-generated if absent)
-│   ├── index.html               # Single-page static explanation
-│   └── requirements.txt         # Python dependencies
-└── README.md
-
-````
-
----
-
-## 🚀 Installation
-
-### 1  Clone the repo
+## 🚀 Quickstart
 
 ```bash
-git clone https://github.com/PR0M3TH3AN/RePrompt.git
-cd RePrompt
-````
+# Clone the repo
+git clone https://github.com/your-org/python_charts.git
+cd python_charts
 
-### 2  Create & activate a virtual-environment
-
-<details>
-<summary>Windows (PowerShell)</summary>
-
-```powershell
-python -m venv venv
-venv\Scripts\Activate.ps1
+# One-command: install deps, download data, and plot
+./startup.sh python scripts/lagged_oil_unrate_chart_styled.py \
+    --offset 12 --end 2025-05-31 --extend-years 5
 ```
 
-</details>
+This will:
 
-<details>
-<summary>macOS / Linux</summary>
+1. Create (or reuse) a Python 3 virtual environment (`venv/`)
+2. Upgrade `pip` & `setuptools` (providing `distutils` support)
+3. Install required packages (offline wheelhouse first, PyPI fallback)
+4. Download UNRATE & DCOILWTICO into `data/fred.db` if missing
+5. Generate the chart with a 12-month oil lead, extending the x-axis by 5 years
 
-```bash
-python3 -m venv venv
-source venv/bin/activate
+---
+
+## 📁 Repository Structure
+
 ```
-
-</details>
-
-### 3  Install dependencies
-
-```bash
-python -m pip install --upgrade pip
-pip install -r src/requirements.txt
-```
-
-`requirements.txt` contains only three packages:
-
-```text
-streamlit
-PyYAML
-pyperclip
+python_charts/
+├── data/
+│   └── fred.db                 # Local FRED snapshot (SQLite)
+├── scripts/
+│   ├── refresh_data.py         # Download and store FRED series
+│   ├── lagged_oil_unrate_chart_styled.py  # Plotting script
+│   └── pyproject.toml          # Packaging metadata
+├── startup.sh                  # Bootstraps venv, deps, data, and runs commands
+├── requirements.txt            # Python dependencies
+└── README.md                   # This file
 ```
 
 ---
 
-## ▶️ Running the app
+## 🛠️ Installation & Setup
 
-```bash
-streamlit run src/app.py
-```
+1. **Ensure** you have Python 3.8+ installed on your system.
+2. **Clone** and navigate into the project:
 
-The UI opens at **[http://localhost:8501](http://localhost:8501)**.
+   ```bash
+   git clone https://github.com/your-org/python_charts.git
+   cd python_charts
+   ```
+3. **Make** the startup script executable:
 
----
-
-## 📝 Usage walk-through
-
-1. **Config file**
-   A starter `config.yaml` is created in `src/`:
-
-   ```yaml
-   exclude_dirs:
-     - node_modules
-     - venv
-     - __pycache__
-     - .git
-     - dist
-     - build
-     - logs
-     - .idea
-     - .vscode
-
-   important_files: []
-   custom_sections: []
+   ```bash
+   chmod +x startup.sh
    ```
 
-2. **Select repo**
-   Click **“Choose Folder”** in the sidebar, navigate to the repository you
-   want to summarise, and select it.
-
-3. **Fine-tune files**
-
-   * Tick directories to *include* in the rendered tree.
-   * Exclude noisy or irrelevant files.
-   * Review the final list.
-
-4. **Generate**
-   Hit **“Generate Context File”**.
-   Download or copy the result; optionally save the configuration for later.
+> On first run, `startup.sh` will build the environment, install dependencies, and pull data.
 
 ---
 
-## 🔧 Customisation tips
+## ⚙️ Usage
 
-### Change default exclusions
-
-Edit these constants in `src/app.py`:
-
-```python
-DEFAULT_EXCLUDED_DIRS = [
-    "node_modules", "venv", "__pycache__", ".git",
-    "dist", "build", "logs", ".idea", ".vscode"
-]
-DEFAULT_EXCLUDED_FILES = ["repo-context.txt"]
-```
-
-### Different port
-
-If port 8501 is busy:
+### Refresh FRED data
 
 ```bash
-streamlit run src/app.py --server.port 8502
+./startup.sh python scripts/refresh_data.py
 ```
 
+Downloads the full UNRATE and WTI series (from 1948 to today) into `data/fred.db`.
+
+### Generate the chart
+
+```bash
+# Default 18-month lag
+./startup.sh
+
+# Custom lag, range, and extension
+./startup.sh python scripts/lagged_oil_unrate_chart_styled.py \
+    --offset 6 --start 1980-01-01 --end 2025-05-31 --extend-years 2
+```
+
+| Option           | Description                                               |
+| ---------------- | --------------------------------------------------------- |
+| `--offset`       | Lag in months (positive = oil leads; negative = oil lags) |
+| `--start`        | Start date (YYYY-MM-DD)                                   |
+| `--end`          | End date (YYYY-MM-DD)                                     |
+| `--extend-years` | Years to extend the x-axis beyond the end date            |
+
 ---
 
-## ❓ Troubleshooting
+## 📝 Details
 
-| Problem                                | Fix                                                           |
-| -------------------------------------- | ------------------------------------------------------------- |
-| `Tcl_AsyncDelete` warning              | Harmless—ignore it.                                           |
-| “Permission denied” when creating dirs | Run your terminal as admin or check folder write permissions. |
-| Packages won’t install                 | `python -m pip install --upgrade pip` then reinstall.         |
-| Port already in use                    | Kill other Streamlit processes or use `--server.port`.        |
+* **Data storage**: `data/fred.db` (SQLite) holds two tables: `UNRATE` and `DCOILWTICO`.
+* **Plot styling**:
+
+  * Left y-axis: unemployment rate (%) from 3 to 15%, ticks every 2%.
+  * Right y-axis: log scale oil price (USD), doubling ticks from \$3 upward.
+  * X-axis: years, major tick every 5 years, minor tick every year.
 
 ---
 
-## 🤝 Contributing
+## 📦 Dependencies
 
-1. Fork → create a feature branch
-2. Commit & push your changes
-3. Open a Pull Request
+Listed in `requirements.txt`:
+
+```text
+pandas>=1.5.0
+pandas_datareader>=0.10.0
+matplotlib>=3.5.0
+lxml>=4.6.0
+python-dateutil>=2.8.1
+```
+
+`startup.sh` also upgrades `pip` & `setuptools` to ensure `distutils` is available.
+
+---
+
+## 🛡️ Troubleshooting
+
+* **ModuleNotFoundError: distutils**: resolved automatically by upgrading `setuptools` in `startup.sh`.
+* **Database not found**: run `./startup.sh python scripts/refresh_data.py` to populate `data/fred.db`.
+* **Virtual-env issues**: delete `venv/` and re-run `startup.sh`.
 
 ---
 
 ## 📄 License
 
-Distributed under the **MIT License** – see `LICENSE` for details.
+This project is released under the MIT License. See [LICENSE](LICENSE) for details.
