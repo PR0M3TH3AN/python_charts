@@ -1,120 +1,190 @@
-# Lagged Oil vs. Unemployment Charting
+# RePrompt – Repository-Context Generator
 
-This repository provides two Python scripts to fetch the latest US Unemployment Rate (UNRATE) and WTI crude oil price (DCOILWTICO) from FRED, apply a configurable lag or lead to the oil series, and generate polished dual‑axis charts.
+**RePrompt** creates a single `repo-context.txt` file that gives AI coding assistants
+(e.g. ChatGPT) a concise, opinionated snapshot of your repository.  
+It combines an overview, directory tree, highlighted file contents, and optional static
+sections such as to-do lists—all configurable through a Streamlit UI.
 
-## Files
+> **Works great with**  
+> [mckaywrigley’s XML parser](https://github.com/mckaywrigley/o1-xml-parser/tree/main).
 
-* **`lagged_oil_unrate_chart.py`**
-  A lightweight script that:
+---
 
-  1. Downloads monthly UNRATE and averages daily WTI to monthly.
-  2. Shifts the oil series by `N` months (default = 18).
-  3. Plots both series on a dual‑axis Matplotlib chart.
+## ✨ Features
 
-* **`lagged_oil_unrate_chart_styled.py`**
-  A more polished version that adds:
+| Category | What it does |
+|----------|--------------|
+| **Streamlit UI** | Choose a target repo, set include/exclude rules, and generate the context file in one screen. |
+| **Context builder** | Produces `repo-context.txt` tailored for AI assistants. |
+| **Configurable tree** | Exclude or include directories/files interactively (defaults skip noisy folders like `node_modules`, `.git`, etc.). |
+| **File highlights** | Embeds syntax-highlighted contents of “important” files you pick. |
+| **Static sections** | Auto-appends `overview.txt`, `to-do_list.txt`, or any custom text snippets. |
+| **Save & load config** | Persist your include/exclude selections for future sessions. |
 
-  * Title, subtitle, footnote with date range and source.
-  * Clean dual‑axis styling with percentage and dollar‑format ticks.
-  * Customizable date range and extended x‑axis (e.g., 1973–2028).
-  * CLI flags for offset, start/end dates, and axis extension.
+---
 
-* **`requirements.txt`**
-  Lists all Python dependencies for both scripts.
+## 🛠 Prerequisites
 
-## Prerequisites
+* **Python 3.7 +** – [download](https://www.python.org/downloads/)  
+* **Git** – [download](https://git-scm.com/downloads)
 
-* Python 3.7 or later
-* Internet connection (to fetch data from FRED)
+---
 
-## Setup
+## 🗂 Directory layout
 
-Clone or download this repository:
-
-```bash
-git clone https://your-repo-url.git
-cd your-repo-folder
 ```
 
-### Create a Virtual Environment & Install Dependencies
+RePrompt/
+├── src/
+│   ├── app.py                   # Streamlit entry-point
+│   ├── generate\_repo\_context.py # Core context-builder
+│   ├── config.yaml              # Default config (auto-generated if absent)
+│   ├── index.html               # Single-page static explanation
+│   └── requirements.txt         # Python dependencies
+└── README.md
 
-#### On Linux / macOS
+````
+
+---
+
+## 🚀 Installation
+
+### 1  Clone the repo
 
 ```bash
-# 1. Create a venv
-python3 -m venv venv
+git clone https://github.com/PR0M3TH3AN/RePrompt.git
+cd RePrompt
+````
 
-# 2. Activate it
-source venv/bin/activate
+### 2  Create & activate a virtual-environment
 
-# 3. Upgrade pip and install requirements
-pip install --upgrade pip
-pip install -r requirements.txt
-```
-
-#### On Windows (PowerShell)
+<details>
+<summary>Windows (PowerShell)</summary>
 
 ```powershell
-# 1. Create a venv
 python -m venv venv
-
-# 2. Activate it
 venv\Scripts\Activate.ps1
+```
 
-# 3. Upgrade pip and install requirements
+</details>
+
+<details>
+<summary>macOS / Linux</summary>
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+</details>
+
+### 3  Install dependencies
+
+```bash
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r src/requirements.txt
 ```
 
-> **Note:** If you get execution policy errors on Windows, you may need to run:
->
-> ```powershell
-> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-> ```
+`requirements.txt` contains only three packages:
 
-## Usage
+```text
+streamlit
+PyYAML
+pyperclip
+```
 
-Once the virtual environment is active and dependencies are installed, run either script from the project root.
+---
 
-### 1. Basic Lag Script
+## ▶️ Running the app
 
 ```bash
-# Default: oil lags unemployment by 18 months (~1.5 years)
-python lagged_oil_unrate_chart.py
-
-# Other offsets (in months)
-python lagged_oil_unrate_chart.py --offset 6    # 6‑month lag
-python lagged_oil_unrate_chart.py --offset -12  # 12‑month lead
+streamlit run src/app.py
 ```
 
-### 2. Styled & Configurable Chart
+The UI opens at **[http://localhost:8501](http://localhost:8501)**.
+
+---
+
+## 📝 Usage walk-through
+
+1. **Config file**
+   A starter `config.yaml` is created in `src/`:
+
+   ```yaml
+   exclude_dirs:
+     - node_modules
+     - venv
+     - __pycache__
+     - .git
+     - dist
+     - build
+     - logs
+     - .idea
+     - .vscode
+
+   important_files: []
+   custom_sections: []
+   ```
+
+2. **Select repo**
+   Click **“Choose Folder”** in the sidebar, navigate to the repository you
+   want to summarise, and select it.
+
+3. **Fine-tune files**
+
+   * Tick directories to *include* in the rendered tree.
+   * Exclude noisy or irrelevant files.
+   * Review the final list.
+
+4. **Generate**
+   Hit **“Generate Context File”**.
+   Download or copy the result; optionally save the configuration for later.
+
+---
+
+## 🔧 Customisation tips
+
+### Change default exclusions
+
+Edit these constants in `src/app.py`:
+
+```python
+DEFAULT_EXCLUDED_DIRS = [
+    "node_modules", "venv", "__pycache__", ".git",
+    "dist", "build", "logs", ".idea", ".vscode"
+]
+DEFAULT_EXCLUDED_FILES = ["repo-context.txt"]
+```
+
+### Different port
+
+If port 8501 is busy:
 
 ```bash
-python lagged_oil_unrate_chart_styled.py \
-    --offset 18 \
-    --start 1973-01-01 \
-    --end 2025-05-31 \
-    --extend-years 3
+streamlit run src/app.py --server.port 8502
 ```
 
-| Flag               | Description                                                    |
-| ------------------ | -------------------------------------------------------------- |
-| `--offset N`       | Lag (positive) or lead (negative) in months (default = 18)     |
-| `--start DATE`     | Series start date (`YYYY-MM-DD`, default = `1973-01-01`)       |
-| `--end DATE`       | Series end date (`YYYY-MM-DD`, default = today)                |
-| `--extend-years M` | How many years beyond `end` to extend the x‑axis (default = 3) |
+---
 
-## Customization
+## ❓ Troubleshooting
 
-* **Normalization**: Insert a normalization step (e.g., percent change from a base date).
-* **Export**: Modify the script to save figures with `plt.savefig('chart.png', dpi=300)`.
-* **Statistics**: Add `ta.correl()` or use Pandas to compute rolling correlations.
+| Problem                                | Fix                                                           |
+| -------------------------------------- | ------------------------------------------------------------- |
+| `Tcl_AsyncDelete` warning              | Harmless—ignore it.                                           |
+| “Permission denied” when creating dirs | Run your terminal as admin or check folder write permissions. |
+| Packages won’t install                 | `python -m pip install --upgrade pip` then reinstall.         |
+| Port already in use                    | Kill other Streamlit processes or use `--server.port`.        |
 
-## Troubleshooting
+---
 
-* **"ModuleNotFoundError"**: Ensure your venv is activated, then reinstall dependencies.
-* **SSL/DataReader errors**: Upgrade `pandas_datareader` or switch to an alternate data source.
+## 🤝 Contributing
 
-## License
+1. Fork → create a feature branch
+2. Commit & push your changes
+3. Open a Pull Request
 
-This project is released under the MIT License.
+---
+
+## 📄 License
+
+Distributed under the **MIT License** – see `LICENSE` for details.
