@@ -1,0 +1,6 @@
+excluded_files:
+- saved_config.yaml
+selected_directories:
+- scripts/
+- outputs/
+- data/
