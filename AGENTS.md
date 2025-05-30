@@ -1,5 +1,11 @@
 # AGENTS.md — Guidance for OpenAI Codex
 
+## Execution Commands
+- **Always** invoke Python scripts via the startup wrapper to activate dependencies:
+  
+  ```bash
+  ./startup.sh --offset <months> --end <YYYY-MM-DD> --extend-years <N>
+
 ## Project Overview
 
 This repository, **python\_charts**, provides a framework for fetching economic time series from FRED, storing them locally, and producing custom matplotlib charts with configurable parameters. The core components are:
