@@ -38,8 +38,8 @@ This will:
    ```bash
    pip install --upgrade -r requirements.txt
    ```
-3. Download UNRATE & DCOILWTICO into `data/fred.db` if missing ([Stack Overflow][3], [martinheinz.dev][4])
-4. Generate the chart with a 12‐month oil lead, extending the x‐axis by 5 years ([martinheinz.dev][4], [Real Python][1])
+3. Download UNRATE & DCOILWTICO into `data/fred.db` if missing (\[Stack Overflow]\[3], \[martinheinz.dev]\[4])
+4. Generate the chart with a 12‐month oil lead, extending the x‐axis by 5 years (\[martinheinz.dev]\[4], \[Real Python]\[1])
 
 ---
 
@@ -69,7 +69,7 @@ python_charts/
 > from common import fetch_series_db, save_figure, validate_dataframe, validate_overlap
 > ```
 >
-> rather than `from scripts.common import …`. ([Real Python][1], [Software Engineering Stack Exchange][2])
+> rather than `from scripts.common import …`. (\[Real Python]\[1], \[Software Engineering Stack Exchange]\[2])
 
 ---
 
@@ -80,7 +80,11 @@ python_charts/
 To refresh (or initially populate) the SQLite database with FRED series, run:
 
 ```bash
-./startup.sh python scripts/refresh_data.py --series UNRATE CPIAUCSL --start 1960-01-01 --output outputs/chart.png
+# Either let startup.sh detect the script path:
+./startup.sh scripts/refresh_data.py --series UNRATE CPIAUCSL --start 1960-01-01 --output outputs/chart.png
+
+# Or invoke it directly as a module (dependencies must already be installed):
+python -m scripts.refresh_data --series UNRATE CPIAUCSL --start 1960-01-01 --output outputs/chart.png
 ```
 
 This command:
@@ -88,7 +92,7 @@ This command:
 * Connects to FRED via `pandas_datareader`
 * Downloads the specified series (e.g., `UNRATE` and `CPIAUCSL`) from the start date through today
 * Writes each series to its own table in `data/fred.db`
-* Saves a PNG of any default plot (if `--output` is provided) to `outputs/` ([Stack Overflow][3], [GitHub][5])
+* Saves a PNG of any default plot (if `--output` is provided) to `outputs/` (\[Stack Overflow]\[3], \[GitHub]\[5])
 
 #### `refresh_data.py` options
 
@@ -101,10 +105,9 @@ This command:
 ##### Example:
 
 ```bash
-./startup.sh python scripts/refresh_data.py --series UNRATE DCOILWTICO CBBTCUSD GLOBAL_M2 --start 1973-01-01
+# Populate fred.db with four series (UNRATE, WTI, Bitcoin, and Global M2)
+./startup.sh scripts/refresh_data.py --series UNRATE DCOILWTICO CBBTCUSD GLOBAL_M2 --start 1973-01-01
 ```
-
-This populates `fred.db` with four series (UNRATE, WTI, Bitcoin, and Global M2). ([Stack Overflow][3], [martinheinz.dev][4])
 
 ---
 
@@ -114,28 +117,33 @@ Once data is present, generate the dual‐axis plot of UNRATE vs. lagged WTI oil
 
 ```bash
 # Default: 18‐month lag, default date range (1973‐01‐01 to today), and 3‐year extension
-./startup.sh python scripts/lagged_oil_unrate_chart_styled.py --offset 18
+./startup.sh --offset 18
 ```
 
-* The script will:
+What happens under the hood:
 
-  1. Import `UNRATE` and `DCOILWTICO` from `fred.db` via:
+1. `startup.sh` sees `--offset 18` and forwards it to the default module `scripts.lagged_oil_unrate_chart_styled` as:
 
-     ```python
-     from common import fetch_series_db, save_figure, validate_dataframe, validate_overlap
-     ```
+   ```bash
+   python -m scripts.lagged_oil_unrate_chart_styled --offset 18
+   ```
+2. The script imports `UNRATE` and `DCOILWTICO` from `fred.db` via:
 
-     ([Real Python][1], [Software Engineering Stack Exchange][2])
-  2. Convert both series to month‐end indices, resample oil to a monthly average, and align their date ranges.
-  3. Validate that neither series is empty, contains `NaN`, or has no overlap (raising a `ValueError` if any issue).
-  4. Apply the specified lag (e.g., 18 months), then plot UNRATE on the left y‐axis (3%–15%, ticks every 2%) and log-scaled WTI on the right y‐axis (doubling ticks).
-  5. Save the figure to `outputs/lagged_oil_unrate_chart_styled_<timestamp>.png` (unless `--output` is specified). ([martinheinz.dev][4], [Real Python][1])
+   ```python
+   from common import fetch_series_db, save_figure, validate_dataframe, validate_overlap
+   ```
+
+   (\[Real Python]\[1], \[Software Engineering Stack Exchange]\[2])
+3. Converts both series to month‐end indices, resamples oil to a monthly average, and aligns their date ranges.
+4. Validates that neither series is empty, contains `NaN`, or has no overlap (raising a `ValueError` if any issue).
+5. Applies the specified lag (e.g., 18 months), then plots UNRATE on the left y‐axis and log‐scaled WTI on the right y‐axis.
+6. Saves the figure to `outputs/lagged_oil_unrate_chart_styled_<timestamp>.png` (unless `--output` is specified). (\[martinheinz.dev]\[4], \[Real Python]\[1])
 
 #### Customizing the UNRATE vs. Oil Chart
 
 ```bash
 # 6‐month lag, start in 1980, end in 2025‐05‐31, extend by 2 years
-./startup.sh python scripts/lagged_oil_unrate_chart_styled.py --offset 6 --start 1980-01-01 --end 2025-05-31 --extend-years 2
+./startup.sh --offset 6 --start 1980-01-01 --end 2025-05-31 --extend-years 2
 ```
 
 | Option           | Description                                                              |
@@ -147,7 +155,7 @@ Once data is present, generate the dual‐axis plot of UNRATE vs. lagged WTI oil
 | `--output`       | Save the figure to this path (PNG or PDF)                                |
 
 > **Note:** If you do not specify `--output`, `save_figure(...)` creates a timestamped PNG in `outputs/` by default:
-> `outputs/lagged_oil_unrate_chart_styled_20250531_121045.png` ([Python Packaging][6], [Real Python][1])
+> `outputs/lagged_oil_unrate_chart_styled_20250531_121045.png` (\[Python Packaging]\[6], \[Real Python]\[1])
 
 ---
 
@@ -156,8 +164,11 @@ Once data is present, generate the dual‐axis plot of UNRATE vs. lagged WTI oil
 You can plot any combination of FRED series stored in `data/fred.db` using `scripts/custom_chart.py`. Each column in the DataFrame is plotted on a shared axis.
 
 ```bash
-# Example: plot both UNRATE and WTI Oil from 2000 through 2020
-./startup.sh python scripts/custom_chart.py --series UNRATE DCOILWTICO --start 2000-01-01 --end 2020-12-31
+# Either let startup.sh detect the script path:
+./startup.sh scripts/custom_chart.py --series UNRATE DCOILWTICO --start 2000-01-01 --end 2020-12-31
+
+# Or invoke it directly as a module (dependencies must already be installed):
+python -m scripts.custom_chart --series UNRATE DCOILWTICO --start 2000-01-01 --end 2020-12-31
 ```
 
 * Internally, `custom_chart.py` invokes:
@@ -179,17 +190,24 @@ You can plot any combination of FRED series stored in `data/fred.db` using `scri
 ### Bitcoin vs. Global M2
 
 Before running `bitcoin_m2_chart.py`, make sure the Bitcoin price
-(`CBBTCUSD`) and global M2 (`GLOBAL_M2`) series exist in `data/fred.db`.
-If the database is missing these tables, fetch them with `refresh_data.py`:
+(`CBBTCUSD`) and global M2 (`GLOBAL_M2`) series exist in `data/fred.db`. If the database is missing these tables, fetch them with `refresh_data.py`:
 
 ```bash
-./startup.sh python scripts/refresh_data.py --series CBBTCUSD GLOBAL_M2 --start 2010-01-01
+# Either let startup.sh detect the script path:
+./startup.sh scripts/refresh_data.py --series CBBTCUSD GLOBAL_M2 --start 2010-01-01
+
+# Or invoke it directly as a module (dependencies must already be installed):
+python -m scripts.refresh_data --series CBBTCUSD GLOBAL_M2 --start 2010-01-01
 ```
 
 Once the data is present, generate the Bitcoin‐Global M2 overlay chart:
 
 ```bash
-./startup.sh python scripts/bitcoin_m2_chart.py --btc-series CBBTCUSD --m2-series GLOBAL_M2 --output outputs/chart.png
+# Either let startup.sh detect the script path:
+./startup.sh scripts/bitcoin_m2_chart.py --btc-series CBBTCUSD --m2-series GLOBAL_M2 --output outputs/chart.png
+
+# Or invoke it directly as a module (dependencies must already be installed):
+python -m scripts.bitcoin_m2_chart --btc-series CBBTCUSD --m2-series GLOBAL_M2 --output outputs/chart.png
 ```
 
 * This script:
@@ -200,10 +218,10 @@ Once the data is present, generate the Bitcoin‐Global M2 overlay chart:
      from common import fetch_series_db, save_figure
      ```
 
-     ([Real Python][1], [Software Engineering Stack Exchange][2])
+     (\[Real Python]\[1], \[Software Engineering Stack Exchange]\[2])
   2. Renames each column to `"value"` for consistency.
   3. Finds the overlapping date range, shifts M2 by `--offset` (default = 94 days), and overlays the two series on dual axes.
-  4. Saves the figure—e.g., `outputs/bitcoin_m2_chart_20250531_090608.png` ([martinheinz.dev][4], [Real Python][1])
+  4. Saves the figure—e.g., `outputs/bitcoin_m2_chart_20250531_090608.png` (\[martinheinz.dev]\[4], \[Real Python]\[1])
 
 > **CLI Options for `bitcoin_m2_chart.py`:**
 >
@@ -223,36 +241,36 @@ Once the data is present, generate the Bitcoin‐Global M2 overlay chart:
 
 * **Data storage**:
 
-  * `data/fred.db` (SQLite) contains one table per FRED series—each table has columns `date` (as the index) and `<SERIES_NAME>` for the value ([Stack Overflow][3], [martinheinz.dev][4]).
+  * `data/fred.db` (SQLite) contains one table per FRED series—each table has columns `date` (as the index) and `<SERIES_NAME>` for the value (\[Stack Overflow]\[3], \[martinheinz.dev]\[4]).
 
 * **Plot styling**:
 
   * **Lagged oil vs. UNRATE chart**:
 
     * Left y‐axis: Unemployment rate (%) from 3% to 15%, with tick marks every 2%
-    * Right y‐axis: WTI oil price (USD) on a log scale; ticks double starting at \$3 (i.e., 3, 6, 12, 24, etc.) ([martinheinz.dev][4], [Real Python][1])
-    * X‐axis: Major tick every 5 years, minor tick every year; format ticks as `%Y` (e.g., 1980, 1985, 1990) ([Real Python][1], [martinheinz.dev][4])
+    * Right y‐axis: WTI oil price (USD) on a log scale; ticks double starting at \$3 (i.e., 3, 6, 12, 24, etc.) (\[martinheinz.dev]\[4], \[Real Python]\[1])
+    * X‐axis: Major tick every 5 years, minor tick every year; format ticks as `%Y` (e.g., 1980, 1985, 1990) (\[Real Python]\[1], \[martinheinz.dev]\[4])
 
   * **Bitcoin vs. Global M2 chart**:
 
     * Left y‐axis: Bitcoin price (USD) as a linear scale
     * Right y‐axis: Global M2 (billions of USD) as a linear scale
-    * X‐axis: Same date formatting as above (major = every 5 years, minor = yearly) ([Real Python][1], [martinheinz.dev][4])
+    * X‐axis: Same date formatting as above (major = every 5 years, minor = yearly) (\[Real Python]\[1], \[martinheinz.dev]\[4])
 
 * **Utility functions in `common.py`**:
 
   * `fetch_series_db(series_list, start, end, db_path)`
 
-    * Opens `data/fred.db`, reads each series table, slices by date range, and concatenates into a single DataFrame, sorted by date. Raises `FileNotFoundError` if `fred.db` is missing. ([Stack Overflow][3], [martinheinz.dev][4])
+    * Opens `data/fred.db`, reads each series table, slices by date range, and concatenates into a single DataFrame, sorted by date. Raises `FileNotFoundError` if `fred.db` is missing. (\[Stack Overflow]\[3], \[martinheinz.dev]\[4])
   * `validate_dataframe(df, name)`
 
-    * Confirms the DataFrame is nonempty, has a `"value"` column, contains no nulls, and uses a `DatetimeIndex`. Raises `ValueError` otherwise. ([devgem.io][7], [Real Python][1])
+    * Confirms the DataFrame is nonempty, has a `"value"` column, contains no nulls, and uses a `DatetimeIndex`. Raises `ValueError` otherwise. (\[devgem.io]\[7], \[Real Python]\[1])
   * `validate_overlap(df1, df2)`
 
-    * Checks for a nonempty overlap in dates between two series; raises `ValueError` if there is no intersection. ([devgem.io][7], [Real Python][1])
+    * Checks for a nonempty overlap in dates between two series; raises `ValueError` if there is no intersection. (\[devgem.io]\[7], \[Real Python]\[1])
   * `save_figure(fig, output, script_path)`
 
-    * Saves the Matplotlib `Figure` to either the given `output` path or `outputs/<script>_<timestamp>.png`. ([Python Packaging][6], [Real Python][1])
+    * Saves the Matplotlib `Figure` to either the given `output` path or `outputs/<script>_<timestamp>.png`. (\[Python Packaging]\[6], \[Real Python]\[1])
 
 ---
 
@@ -283,36 +301,45 @@ python-dateutil>=2.8.1
 
   * Ensure you have added `scripts/__init__.py` and that all `from scripts.common import …` lines have been updated to `from common import …`. Then rerun:
 
-    ````bash
-    ./startup.sh python scripts/lagged_oil_unrate_chart_styled.py --offset 18
-    ``` :contentReference[oaicite:24]{index=24}
+    ```bash
+    # Run the default lagged-oil chart via startup.sh
+    ./startup.sh --offset 18
+    ```
 
-    ````
+    or, if you prefer the module form:
+
+    ```bash
+    python -m scripts.lagged_oil_unrate_chart_styled --offset 18
+    ```
 
 * **`ValueError: UNRATE contains null values`**
 
   * This indicates that the UNRATE DataFrame has missing (NaN) entries. Possible fixes:
 
-    1. Drop nulls within SQL—e.g., run `refresh_data.py --end` using the last fully published month rather than “today” ([devgem.io][7], [pyOpenSci][8])
-    2. Forward‐fill or backward‐fill missing UNRATE values in `common.py` before validation (if appropriate) ([pyOpenSci][8], [Real Python][1])
-    3. Comment out the strict null check in `validate_dataframe(...)` (not recommended for publication‐quality charts) ([devgem.io][7], [Real Python][1])
+    1. Drop nulls within SQL—e.g., run `refresh_data.py --end` using the last fully published month rather than “today” (\[devgem.io]\[7], \[pyOpenSci]\[8])
+    2. Forward‐fill or backward‐fill missing UNRATE values in `common.py` before validation (if appropriate) (\[pyOpenSci]\[8], \[Real Python]\[1])
+    3. Comment out the strict null check in `validate_dataframe(...)` (not recommended for publication‐quality charts) (\[devgem.io]\[7], \[Real Python]\[1])
 
 * **Database not found**
 
   * If `data/fred.db` does not exist (e.g., fresh clone), run:
 
     ````bash
-    ./startup.sh python scripts/refresh_data.py --series UNRATE DCOILWTICO
+    # Using startup.sh to detect the script path
+    ./startup.sh scripts/refresh_data.py --series UNRATE DCOILWTICO
+
+    # Or run it as a module directly
+    python -m scripts.refresh_data --series UNRATE DCOILWTICO
     ``` :contentReference[oaicite:28]{index=28}  
 
     ````
 
 * **Permission errors**
 
-  * Ensure you have write access to the project directory, especially for `data/` and `outputs/`. ([Real Python][1], [Roy's Blog][9])
+  * Ensure you have write access to the project directory, especially for `data/` and `outputs/`. (\[Real Python]\[1], \[Roy's Blog]\[9])
 
 ---
 
 ## 📄 License
 
-Released under the MIT License. See [LICENSE](LICENSE) for details. ([Roy's Blog][9], [Real Python][1])
+Released under the MIT License. See [LICENSE](LICENSE) for details. (\[Roy's Blog]\[9], \[Real Python]\[1])
