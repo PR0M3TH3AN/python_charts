@@ -183,7 +183,7 @@ After downloading the required series, generate the Bitcoin‐Global M2 overlay 
 
      ([Real Python][1], [Software Engineering Stack Exchange][2])
   2. Renames each column to `"value"` for consistency.
-  3. Finds the overlapping date range, shifts M2 by `--offset-days` (default = 94 days), and overlays the two series on dual axes.
+  3. Finds the overlapping date range, shifts M2 by `--offset` (default = 94 days), and overlays the two series on dual axes.
   4. Saves the figure—e.g., `outputs/bitcoin_m2_chart_20250531_090608.png` ([martinheinz.dev][4], [Real Python][1])
 
 > **CLI Options for `bitcoin_m2_chart.py`:**
@@ -194,7 +194,7 @@ After downloading the required series, generate the Bitcoin‐Global M2 overlay 
 > | `--m2-series`    | `GLOBAL_M2`  | FRED series code for global M2 money supply      |
 > | `--start`        | `2010-01-01` | Start date for fetching both series              |
 > | `--end`          | Today        | End date for fetching both series                |
-> | `--offset-days`  | `94`         | Shift M2 by this many days (positive → M2 leads) |
+> | `--offset`       | `94`         | Shift M2 by this many days (positive → M2 leads) |
 > | `--extend-years` | `1`          | Years beyond `end` to extend the x‐axis          |
 > | `--output`       | None         | Optional path to save the figure (PNG/PDF)       |
 

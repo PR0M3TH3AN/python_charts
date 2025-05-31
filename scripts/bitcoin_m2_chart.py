@@ -104,7 +104,7 @@ def main(argv: list[str] | None = None) -> plt.Figure:
         help="end date YYYY-MM-DD",
     )
     p.add_argument(
-        "--offset-days",
+        "--offset",
         type=int,
         default=94,
         help="shift M2 by this many days (positive = M2 leads)",
@@ -124,7 +124,7 @@ def main(argv: list[str] | None = None) -> plt.Figure:
     end_dt = datetime.fromisoformat(args.end)
 
     btc, m2 = fetch_series(start_dt, end_dt, args.btc_series, args.m2_series, args.db)
-    fig = plot_bitcoin_m2(btc, m2, args.offset_days, args.extend_years)
+    fig = plot_bitcoin_m2(btc, m2, args.offset, args.extend_years)
 
     save_figure(fig, args.output, __file__)
     if argv is None:
