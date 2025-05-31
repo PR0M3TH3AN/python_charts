@@ -55,7 +55,7 @@ python_charts/
 ### Refresh FRED data
 
 ```bash
-./startup.sh scripts/refresh_data.py
+./startup.sh python scripts/refresh_data.py --series UNRATE CPIAUCSL --start 1960-01-01
 ```
 
 Downloads UNRATE and WTI series (from 1948 to today) into `data/fred.db`.
@@ -128,7 +128,7 @@ python-dateutil>=2.8.1
 ## 🛡️ Troubleshooting
 
 * **ModuleNotFoundError: distutils**: resolved by `pip install --upgrade setuptools`.
-* **Database not found**: run `./startup.sh scripts/refresh_data.py`.
+* **Database not found**: run `./startup.sh python scripts/refresh_data.py`.
 * **Permission errors**: ensure write access to the project directory.
 
 ---
