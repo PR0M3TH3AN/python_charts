@@ -6,6 +6,9 @@ from pathlib import Path
 from typing import Iterable
 
 from scripts.constants import DB_PATH_DEFAULT
+import logging
+
+logger = logging.getLogger(__name__)
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -22,7 +25,7 @@ def save_figure(fig: plt.Figure, output: str | None, script_path: str) -> Path:
     )
     out_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_path)
-    print(f"Saved figure to {out_path}")
+    logger.info("Saved figure to %s", out_path)
     return out_path
 
 
