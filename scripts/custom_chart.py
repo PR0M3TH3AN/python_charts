@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 # IMPORTANT: import common directly (no "scripts." prefix)
-from common import fetch_series_db, save_figure
+from scripts.common import fetch_series_db, save_figure
 
 
 def fetch_series_multi(
