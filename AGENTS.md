@@ -69,6 +69,7 @@ Future extensions will add additional custom chart scripts under `scripts/`, all
 
 * **Automated tests**: Add pytest modules under `tests/` following the pattern `test_*.py`.
 * **Data mocking**: For new chart scripts, mock FRED downloads via monkeypatching `pandas_datareader.data.DataReader`.
+* **Figure tests**: `tests/test_plot.py` ensures `plot_lagged` returns a figure with two axes and at least one line.
 
 ## Extending with New Charts
 

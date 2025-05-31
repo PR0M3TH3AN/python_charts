@@ -45,20 +45,18 @@ def fetch_series(
         )
 
     with sqlite3.connect(db_path) as conn:
-        unrate = (
-            pd.read_sql(
-                "SELECT date, UNRATE AS value FROM UNRATE", conn,
-                parse_dates=["date"], index_col="date"
-            )
-            .loc[start:end]
-        )
-        oil = (
-            pd.read_sql(
-                "SELECT date, DCOILWTICO AS value FROM DCOILWTICO", conn,
-                parse_dates=["date"], index_col="date"
-            )
-            .loc[start:end]
-        )
+        unrate = pd.read_sql(
+            "SELECT date, UNRATE AS value FROM UNRATE",
+            conn,
+            parse_dates=["date"],
+            index_col="date",
+        ).loc[start:end]
+        oil = pd.read_sql(
+            "SELECT date, DCOILWTICO AS value FROM DCOILWTICO",
+            conn,
+            parse_dates=["date"],
+            index_col="date",
+        ).loc[start:end]
 
     # Resample WTI to month-end average
     oil_monthly = oil.resample("M").mean()
@@ -108,17 +106,22 @@ def plot_lagged(
     _start_date: datetime,
     _end_date: datetime,
     extend_years: int,
-) -> None:
+) -> plt.Figure:
     """
     Render the dual-axis chart with fixed scales and log ticks on oil.
     Trims both series to their overlapping date range before shifting.
+
+    Returns the created :class:`matplotlib.figure.Figure` so callers can
+    decide how to display or save it.
     """
     # Find overlapping date range
     common_start = max(unrate.index.min(), oil.index.min())
     common_end = min(unrate.index.max(), oil.index.max())
 
     print(f"⚠️ Using overlapping range: {common_start.date()} to {common_end.date()}")
-    print(f"  - UNRATE range: {unrate.index.min().date()} to {unrate.index.max().date()}")
+    print(
+        f"  - UNRATE range: {unrate.index.min().date()} to {unrate.index.max().date()}"
+    )
     print(f"  - OIL range: {oil.index.min().date()} to {oil.index.max().date()}")
 
     # Trim series to common range
@@ -208,7 +211,7 @@ def plot_lagged(
     )
 
     fig.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plt.show()
+    return fig
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -254,7 +257,8 @@ def main() -> None:
 
     unrate, oil = fetch_series(start_dt, end_dt, args.db)
     validate_series(unrate, oil)
-    plot_lagged(unrate, oil, args.offset, start_dt, end_dt, args.extend_years)
+    fig = plot_lagged(unrate, oil, args.offset, start_dt, end_dt, args.extend_years)
+    fig.show()
 
 
 if __name__ == "__main__":
