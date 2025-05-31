@@ -13,12 +13,7 @@
 
 * Running a script this way ensures that `import scripts.common` (and other `scripts.*` imports) resolve correctly.
 
-* If you ever need to call a different script, still invoke it under `./startup.sh`, for example:
-
-  ```bash
-  # Custom-chart example:
-  ./startup.sh python -m scripts.custom_chart --series UNRATE DCOILWTICO --start 2000-01-01 --end 2020-12-31
-  ```
+* **Do not** follow a `./startup.sh` invocation by running `python scripts/<script>.py` on the next line. The `startup.sh` wrapper already executed the module; any additional direct invocation will fail because Python will not find the `scripts` package in that context.
 
 * **Never** call `refresh_data.py` from within a Task Command. This environment has **no internet access**, so attempts to fetch external data will fail. Data in `data/fred.db` must already be present. If you need to refresh data, run it only in an internet-connected shell:
 
