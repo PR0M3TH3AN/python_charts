@@ -95,6 +95,10 @@ To add new data and plot it later:
 The plotting script validates that both series contain data for the
 requested period before rendering the chart.
 
+If no `--output` path is provided, each script automatically saves the figure to
+`outputs/<script>_<timestamp>.png`, where `<script>` is the script's base name
+and `<timestamp>` is the current date and time in `YYYYMMDD_HHMMSS` format.
+
 | Option           | Description                                     |
 | ---------------- | ----------------------------------------------- |
 | `--offset`       | Lag in months (pos = oil leads; neg = oil lags) |

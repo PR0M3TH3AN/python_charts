@@ -23,6 +23,20 @@ from dateutil.relativedelta import relativedelta
 import sqlite3
 
 
+def save_figure(fig: plt.Figure, output: str | None, script_path: str) -> Path:
+    """Save ``fig`` to ``output`` or a timestamped path under ``outputs/``."""
+    out_path = (
+        Path(output)
+        if output is not None
+        else Path("outputs")
+        / f"{Path(script_path).stem}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+    )
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path)
+    print(f"Saved figure to {out_path}")
+    return out_path
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # Data helpers
 # ──────────────────────────────────────────────────────────────────────────
@@ -217,7 +231,7 @@ def plot_lagged(
 # ──────────────────────────────────────────────────────────────────────────
 # CLI
 # ──────────────────────────────────────────────────────────────────────────
-def main() -> None:
+def main() -> plt.Figure:
     p = argparse.ArgumentParser()
     p.add_argument(
         "-o",
@@ -264,9 +278,9 @@ def main() -> None:
     unrate, oil = fetch_series(start_dt, end_dt, args.db)
     validate_series(unrate, oil)
     fig = plot_lagged(unrate, oil, args.offset, start_dt, end_dt, args.extend_years)
-    if args.output:
-        fig.savefig(args.output)
+    save_figure(fig, args.output, __file__)
     fig.show()
+    return fig
 
 
 if __name__ == "__main__":
