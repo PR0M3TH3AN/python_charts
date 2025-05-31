@@ -167,7 +167,15 @@ You can plot any combination of FRED series stored in `data/fred.db` using `scri
 
 ### Bitcoin vs. Global M2
 
-After downloading the required series, generate the Bitcoin‐Global M2 overlay chart:
+Before running `bitcoin_m2_chart.py`, make sure the Bitcoin price
+(`CBBTCUSD`) and global M2 (`GLOBAL_M2`) series exist in `data/fred.db`.
+If the database is missing these tables, fetch them with `refresh_data.py`:
+
+```bash
+./startup.sh python scripts/refresh_data.py --series CBBTCUSD GLOBAL_M2 --start 2010-01-01
+```
+
+Once the data is present, generate the Bitcoin‐Global M2 overlay chart:
 
 ```bash
 ./startup.sh python scripts/bitcoin_m2_chart.py --btc-series CBBTCUSD --m2-series GLOBAL_M2 --output outputs/chart.png
