@@ -8,3 +8,4 @@ wheelhouse/*.md
 # keep wheel files themselves!
 data/*.bak
 repo-context.txt
+outputs/

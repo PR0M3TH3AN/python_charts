@@ -250,6 +250,12 @@ def main() -> None:
         default="data/fred.db",
         help="path to local FRED SQLite file",
     )
+    p.add_argument(
+        "--output",
+        type=str,
+        default=None,
+        help="optional path to save the figure (PNG or PDF)",
+    )
     args = p.parse_args()
 
     start_dt = datetime.fromisoformat(args.start)
@@ -258,6 +264,8 @@ def main() -> None:
     unrate, oil = fetch_series(start_dt, end_dt, args.db)
     validate_series(unrate, oil)
     fig = plot_lagged(unrate, oil, args.offset, start_dt, end_dt, args.extend_years)
+    if args.output:
+        fig.savefig(args.output)
     fig.show()
 
 

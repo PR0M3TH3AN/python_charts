@@ -79,6 +79,7 @@ requested period before rendering the chart.
 | `--start`        | Start date (YYYY-MM-DD)                         |
 | `--end`          | End date (YYYY-MM-DD)                           |
 | `--extend-years` | Years to extend the x-axis beyond the end date  |
+| `--output`       | Save the figure to this path before showing it  |
 
 ## Custom Charts
 

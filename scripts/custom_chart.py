@@ -83,6 +83,12 @@ def main(argv: list[str] | None = None) -> plt.Figure:
         help="end date YYYY-MM-DD",
     )
     p.add_argument("--db", type=str, default="data/fred.db", help="path to SQLite DB")
+    p.add_argument(
+        "--output",
+        type=str,
+        default=None,
+        help="optional path to save the figure (PNG or PDF)",
+    )
     args = p.parse_args(argv)
 
     start_dt = datetime.fromisoformat(args.start)
@@ -91,6 +97,8 @@ def main(argv: list[str] | None = None) -> plt.Figure:
     data = fetch_series_multi(args.series, start_dt, end_dt, args.db)
     fig = plot_series(data)
 
+    if args.output:
+        fig.savefig(args.output)
     if argv is None:
         fig.show()
     return fig
