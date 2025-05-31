@@ -9,6 +9,7 @@ import pandas as pd
 sys.path.append(os.path.abspath("."))
 
 from scripts.lagged_oil_unrate_chart_styled import plot_lagged
+from scripts.custom_chart import plot_series, main as custom_main
 
 
 def test_plot_lagged_returns_figure():
@@ -20,3 +21,27 @@ def test_plot_lagged_returns_figure():
 
     assert len(fig.axes) == 2
     assert any(ax.get_lines() for ax in fig.axes)
+
+
+def test_plot_series_and_main():
+    dates = pd.date_range("2020-01-01", periods=3, freq="D")
+    df = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]}, index=dates)
+    fig = plot_series(df)
+    assert len(fig.axes) == 1
+    assert any(fig.axes[0].get_lines())
+
+    fig2 = custom_main(
+        [
+            "--series",
+            "UNRATE",
+            "DCOILWTICO",
+            "--start",
+            "2020-01-01",
+            "--end",
+            "2020-03-01",
+            "--db",
+            "data/fred.db",
+        ]
+    )
+    assert len(fig2.axes) == 1
+    assert any(fig2.axes[0].get_lines())
