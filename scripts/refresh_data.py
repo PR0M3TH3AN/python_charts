@@ -16,6 +16,9 @@ from datetime import date
 import argparse
 import pathlib
 import sqlite3
+import logging
+
+logger = logging.getLogger(__name__)
 
 from pandas_datareader.data import DataReader
 import pandas as pd
@@ -46,11 +49,15 @@ def main(argv: list[str] | None = None) -> None:
     DATA_PATH.mkdir(exist_ok=True)
     with sqlite3.connect(DB_FILE) as conn:
         for s in args.series:
-            print(f"↯ downloading {s} …")
+            logger.info("\u21af downloading %s …", s)
             df = DataReader(s, "fred", args.start, args.end)
             df.to_sql(s, conn, if_exists="replace", index_label="date")
-            print(f"✓ wrote {s}: {len(df):,} rows")
-    print(f"\nDone.  SQLite DB at {DB_FILE} ({DB_FILE.stat().st_size/1024:.0f} KB)")
+            logger.info("\u2713 wrote %s: %s rows", s, len(df))
+    logger.info(
+        "\nDone.  SQLite DB at %s (%s KB)",
+        DB_FILE,
+        DB_FILE.stat().st_size / 1024,
+    )
 
 
 if __name__ == "__main__":

@@ -14,6 +14,9 @@ from __future__ import annotations
 import argparse
 from datetime import datetime
 from pathlib import Path
+import logging
+
+logger = logging.getLogger(__name__)
 
 from scripts.constants import DB_PATH_DEFAULT, UNRATE, DCOILWTICO
 
@@ -98,11 +101,21 @@ def plot_lagged(
     common_start = max(unrate.index.min(), oil.index.min())
     common_end = min(unrate.index.max(), oil.index.max())
 
-    print(f"⚠️ Using overlapping range: {common_start.date()} to {common_end.date()}")
-    print(
-        f"  - UNRATE range: {unrate.index.min().date()} to {unrate.index.max().date()}"
+    logger.info(
+        "\u26a0\ufe0f Using overlapping range: %s to %s",
+        common_start.date(),
+        common_end.date(),
     )
-    print(f"  - OIL    range: {oil.index.min().date()} to {oil.index.max().date()}")
+    logger.info(
+        "  - UNRATE range: %s to %s",
+        unrate.index.min().date(),
+        unrate.index.max().date(),
+    )
+    logger.info(
+        "  - OIL    range: %s to %s",
+        oil.index.min().date(),
+        oil.index.max().date(),
+    )
 
     # Trim series to common range
     unrate_common = unrate.loc[common_start:common_end]
