@@ -14,9 +14,13 @@ REQ_FILE="requirements.txt"
 DATA_DB="data/fred.db"
 DEFAULT_MODULE="scripts.lagged_oil_unrate_chart_styled"
 
-# 1) Ensure pip & setuptools are up to date
-echo "🛠 Upgrading pip & setuptools…"
-pip install --upgrade pip setuptools
+# 1) Ensure pip & setuptools are up to date unless running offline
+if [[ "${PIP_NO_INDEX:-}" == "1" ]]; then
+  echo "🔒 Offline mode detected; skipping upgrade"
+else
+  echo "🛠 Upgrading pip & setuptools…"
+  pip install --upgrade pip setuptools
+fi
 
 # 2) Install project dependencies globally
 echo "📦 Installing dependencies from $REQ_FILE…"
