@@ -119,6 +119,14 @@ The same invocation is available via Make:
 ```bash
 make plot-custom ARGS="--series UNRATE DCOILWTICO --start 2000-01-01 --end 2020-12-31"
 ```
+### Bitcoin vs. Global M2
+
+After downloading the required series into `data/fred.db`, generate the Bitcoin overlay chart:
+
+```bash
+./startup.sh python scripts/bitcoin_m2_chart.py --btc-series CBBTCUSD --m2-series GLOBAL_M2
+```
+
 
 ---
 
