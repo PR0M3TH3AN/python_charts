@@ -23,7 +23,12 @@ import pandas as pd
 from dateutil.relativedelta import relativedelta
 
 # IMPORTANT: use the package‐qualified import
-from scripts.common import fetch_series_db, save_figure
+from scripts.common import (
+    fetch_series_db,
+    save_figure,
+    validate_dataframe,
+    validate_overlap,
+)
 
 
 def fetch_series(
@@ -38,6 +43,15 @@ def fetch_series(
     btc = df[[btc_series]].rename(columns={btc_series: "value"})
     m2 = df[[m2_series]].rename(columns={m2_series: "value"})
     return btc, m2
+
+
+def validate_series(
+    btc: pd.DataFrame, m2: pd.DataFrame, btc_name: str, m2_name: str
+) -> None:
+    """Run basic sanity checks on the two series."""
+    validate_dataframe(btc, btc_name)
+    validate_dataframe(m2, m2_name)
+    validate_overlap(btc, m2)
 
 
 def plot_bitcoin_m2(
@@ -129,6 +143,7 @@ def main(argv: list[str] | None = None) -> plt.Figure:
     end_dt = datetime.fromisoformat(args.end)
 
     btc, m2 = fetch_series(start_dt, end_dt, args.btc_series, args.m2_series, args.db)
+    validate_series(btc, m2, args.btc_series, args.m2_series)
     fig = plot_bitcoin_m2(btc, m2, args.offset, args.extend_years)
 
     save_figure(fig, args.output, __file__)
