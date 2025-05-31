@@ -59,6 +59,10 @@ def plot_bitcoin_m2(
     m2: pd.DataFrame,
     offset_days: int,
     extend_years: int,
+    *,
+    width: float = 12,
+    height: float = 6,
+    dpi: int | None = None,
 ) -> plt.Figure:
     """Plot Bitcoin price and shifted M2 on dual axes."""
     # Determine overlapping range
@@ -70,7 +74,7 @@ def plot_bitcoin_m2(
 
     m2_shifted = m2_common.shift(offset_days)
 
-    fig, ax1 = plt.subplots(figsize=(12, 6))
+    fig, ax1 = plt.subplots(figsize=(width, height), dpi=dpi)
     ax1.plot(
         btc_common.index, btc_common["value"], label="Bitcoin (LHS)", color="#1f77b4"
     )
@@ -137,6 +141,10 @@ def main(argv: list[str] | None = None) -> plt.Figure:
     p.add_argument(
         "--output", type=str, default=None, help="optional path to save the figure"
     )
+    p.add_argument("--width", type=float, default=12.0, help="figure width in inches")
+    p.add_argument("--height", type=float, default=6.0, help="figure height in inches")
+    p.add_argument("--dpi", type=int, default=None, help="figure DPI")
+    p.add_argument("--no-show", action="store_true", help="do not display the figure")
     args = p.parse_args(argv)
 
     start_dt = datetime.fromisoformat(args.start)
@@ -144,10 +152,18 @@ def main(argv: list[str] | None = None) -> plt.Figure:
 
     btc, m2 = fetch_series(start_dt, end_dt, args.btc_series, args.m2_series, args.db)
     validate_series(btc, m2, args.btc_series, args.m2_series)
-    fig = plot_bitcoin_m2(btc, m2, args.offset, args.extend_years)
+    fig = plot_bitcoin_m2(
+        btc,
+        m2,
+        args.offset,
+        args.extend_years,
+        width=args.width,
+        height=args.height,
+        dpi=args.dpi,
+    )
 
     save_figure(fig, args.output, __file__)
-    if argv is None:
+    if argv is None and not args.no_show:
         fig.show()
     return fig
 

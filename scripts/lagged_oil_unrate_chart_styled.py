@@ -82,6 +82,10 @@ def plot_lagged(
     _start_date: datetime,
     _end_date: datetime,
     extend_years: int,
+    *,
+    width: float = 14,
+    height: float = 7,
+    dpi: int | None = None,
 ) -> plt.Figure:
     """
     Render the dual-axis chart with fixed scales and log ticks on oil.
@@ -107,7 +111,7 @@ def plot_lagged(
     # Apply lag/lead
     oil_shifted = oil_common.shift(offset_months)
 
-    fig, ax1 = plt.subplots(figsize=(14, 7))
+    fig, ax1 = plt.subplots(figsize=(width, height), dpi=dpi)
     plt.title("Unemployment Rate and US Oil Price", fontsize=20, weight="bold")
     plt.suptitle(
         "Civilian Unemployment Rate and WTI Crude Oil Price",
@@ -193,7 +197,7 @@ def plot_lagged(
 # ──────────────────────────────────────────────────────────────────────────
 # CLI
 # ──────────────────────────────────────────────────────────────────────────
-def main() -> plt.Figure:
+def main(argv: list[str] | None = None) -> plt.Figure:
     p = argparse.ArgumentParser()
     p.add_argument(
         "-o",
@@ -232,7 +236,11 @@ def main() -> plt.Figure:
         default=None,
         help="optional path to save the figure (PNG or PDF)",
     )
-    args = p.parse_args()
+    p.add_argument("--width", type=float, default=14.0, help="figure width in inches")
+    p.add_argument("--height", type=float, default=7.0, help="figure height in inches")
+    p.add_argument("--dpi", type=int, default=None, help="figure DPI")
+    p.add_argument("--no-show", action="store_true", help="do not display the figure")
+    args = p.parse_args(argv)
 
     start_dt = datetime.fromisoformat(args.start)
     end_dt = datetime.fromisoformat(args.end)
@@ -256,9 +264,20 @@ def main() -> plt.Figure:
     oil = oil.loc[oil.index.isin(unrate.index)]
 
     validate_series(unrate, oil)
-    fig = plot_lagged(unrate, oil, args.offset, start_dt, end_dt, args.extend_years)
+    fig = plot_lagged(
+        unrate,
+        oil,
+        args.offset,
+        start_dt,
+        end_dt,
+        args.extend_years,
+        width=args.width,
+        height=args.height,
+        dpi=args.dpi,
+    )
     save_figure(fig, args.output, __file__)
-    fig.show()
+    if argv is None and not args.no_show:
+        fig.show()
     return fig
 
 
