@@ -19,7 +19,7 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
 from dateutil.relativedelta import relativedelta
-from scripts.common import fetch_series_db, save_figure
+from common import fetch_series_db, save_figure
 
 
 def fetch_series(

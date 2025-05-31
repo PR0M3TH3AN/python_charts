@@ -17,8 +17,7 @@ from typing import Iterable
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
-from scripts.common import fetch_series_db, save_figure
-
+from common import fetch_series_db, save_figure
 
 def fetch_series_multi(
     series: Iterable[str],
