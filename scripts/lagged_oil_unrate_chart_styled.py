@@ -1,6 +1,3 @@
-Here’s the fully updated `scripts/lagged_oil_unrate_chart_styled.py`. You can copy–paste it in place of your existing file.
-
-```python
 #!/usr/bin/env python3
 """
 lagged_oil_unrate_chart_styled.py
@@ -262,4 +259,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-```
