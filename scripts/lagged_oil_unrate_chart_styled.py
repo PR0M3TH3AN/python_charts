@@ -17,24 +17,14 @@ from pathlib import Path
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
-import numpy as np
 import pandas as pd
 from dateutil.relativedelta import relativedelta
-import sqlite3
-
-
-def save_figure(fig: plt.Figure, output: str | None, script_path: str) -> Path:
-    """Save ``fig`` to ``output`` or a timestamped path under ``outputs/``."""
-    out_path = (
-        Path(output)
-        if output is not None
-        else Path("outputs")
-        / f"{Path(script_path).stem}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
-    )
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out_path)
-    print(f"Saved figure to {out_path}")
-    return out_path
+from scripts.common import (
+    fetch_series_db,
+    save_figure,
+    validate_dataframe,
+    validate_overlap,
+)
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -51,26 +41,9 @@ def fetch_series(
     * convert UNRATE to month-end timestamps
     * average WTI daily prices to month-end
     """
-    db_path = Path(db_path)
-    if not db_path.exists():
-        raise FileNotFoundError(
-            f"{db_path} not found.  Run scripts/refresh_data.py on a "
-            "machine with internet, commit the new DB, then retry."
-        )
-
-    with sqlite3.connect(db_path) as conn:
-        unrate = pd.read_sql(
-            "SELECT date, UNRATE AS value FROM UNRATE",
-            conn,
-            parse_dates=["date"],
-            index_col="date",
-        ).loc[start:end]
-        oil = pd.read_sql(
-            "SELECT date, DCOILWTICO AS value FROM DCOILWTICO",
-            conn,
-            parse_dates=["date"],
-            index_col="date",
-        ).loc[start:end]
+    df = fetch_series_db(["UNRATE", "DCOILWTICO"], start, end, db_path)
+    unrate = df[["UNRATE"]].rename(columns={"UNRATE": "value"})
+    oil = df[["DCOILWTICO"]].rename(columns={"DCOILWTICO": "value"})
 
     # Resample WTI to month-end average
     oil_monthly = oil.resample("M").mean()
@@ -80,34 +53,10 @@ def fetch_series(
 
 
 def validate_series(unrate: pd.DataFrame, oil: pd.DataFrame) -> None:
-    """
-    Sanity-check the fetched series before plotting.
-
-    Both dataframes must contain a ``value`` column with no missing values
-    and share a non-empty overlapping date range.
-    """
-    if unrate.empty:
-        raise ValueError("UNRATE dataframe is empty")
-    if oil.empty:
-        raise ValueError("DCOILWTICO dataframe is empty")
-
-    for name, df in [("UNRATE", unrate), ("DCOILWTICO", oil)]:
-        if "value" not in df.columns:
-            raise ValueError(f"{name} missing 'value' column")
-        if df["value"].isna().any():
-            raise ValueError(f"{name} contains null values")
-
-    if not isinstance(unrate.index, pd.DatetimeIndex) or not isinstance(
-        oil.index, pd.DatetimeIndex
-    ):
-        raise ValueError("Indexes must be DatetimeIndex")
-
-    # Replace strict range check with overlap check
-    overlap_start = max(unrate.index.min(), oil.index.min())
-    overlap_end = min(unrate.index.max(), oil.index.max())
-
-    if overlap_start >= overlap_end:
-        raise ValueError("Series have no overlapping date range")
+    """Run basic sanity checks on the two series."""
+    validate_dataframe(unrate, "UNRATE")
+    validate_dataframe(oil, "DCOILWTICO")
+    validate_overlap(unrate, oil)
 
 
 # ──────────────────────────────────────────────────────────────────────────

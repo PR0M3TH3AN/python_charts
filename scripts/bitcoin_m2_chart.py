@@ -19,21 +19,7 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
 from dateutil.relativedelta import relativedelta
-import sqlite3
-
-
-def save_figure(fig: plt.Figure, output: str | None, script_path: str) -> Path:
-    """Save ``fig`` to ``output`` or a timestamped path under ``outputs/``."""
-    out_path = (
-        Path(output)
-        if output is not None
-        else Path("outputs")
-        / f"{Path(script_path).stem}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
-    )
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out_path)
-    print(f"Saved figure to {out_path}")
-    return out_path
+from scripts.common import fetch_series_db, save_figure
 
 
 def fetch_series(
@@ -44,25 +30,9 @@ def fetch_series(
     db_path: str | Path = Path("data/fred.db"),
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Load Bitcoin and M2 series from a local SQLite DB."""
-    db_path = Path(db_path)
-    if not db_path.exists():
-        raise FileNotFoundError(
-            f"{db_path} not found. Run scripts/refresh_data.py on a machine with internet, commit the DB, then retry."
-        )
-
-    with sqlite3.connect(db_path) as conn:
-        btc = pd.read_sql(
-            f"SELECT date, {btc_series} AS value FROM {btc_series}",
-            conn,
-            parse_dates=["date"],
-            index_col="date",
-        ).loc[start:end]
-        m2 = pd.read_sql(
-            f"SELECT date, {m2_series} AS value FROM {m2_series}",
-            conn,
-            parse_dates=["date"],
-            index_col="date",
-        ).loc[start:end]
+    df = fetch_series_db([btc_series, m2_series], start, end, db_path)
+    btc = df[[btc_series]].rename(columns={btc_series: "value"})
+    m2 = df[[m2_series]].rename(columns={m2_series: "value"})
     return btc, m2
 
 
