@@ -60,6 +60,28 @@ python_charts/
 
 Downloads UNRATE and WTI series (from 1948 to today) into `data/fred.db`.
 
+#### `refresh_data.py` options
+
+| Option     | Description                         |
+| ---------- | ----------------------------------- |
+| `--series` | One or more FRED series names       |
+| `--start`  | Start date in `YYYY-MM-DD` format   |
+| `--end`    | End date in `YYYY-MM-DD` format     |
+
+To add new data and plot it later:
+
+1. Download series:
+
+   ```bash
+   ./startup.sh python scripts/refresh_data.py --series <names>
+   ```
+
+2. Generate a chart with those series:
+
+   ```bash
+   ./startup.sh python scripts/custom_chart.py --series <names>
+   ```
+
 ### Generate the chart
 
 ```bash
@@ -102,7 +124,7 @@ make plot-custom ARGS="--series UNRATE DCOILWTICO --start 2000-01-01 --end 2020-
 
 ## 📝 Details
 
-* **Data storage**: `data/fred.db` (SQLite) holds two tables: `UNRATE` and `DCOILWTICO`.
+* **Data storage**: `data/fred.db` (SQLite) contains one table per series (e.g., `UNRATE`, `DCOILWTICO`).
 * **Plot styling**:
 
   * Left y-axis: unemployment rate (%) from 3 to 15%, ticks every 2%.
