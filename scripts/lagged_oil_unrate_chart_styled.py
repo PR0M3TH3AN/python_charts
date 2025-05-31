@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 from datetime import datetime
 from pathlib import Path
+import sys
 import logging
 
 logger = logging.getLogger(__name__)
@@ -255,8 +256,17 @@ def main(argv: list[str] | None = None) -> plt.Figure:
     p.add_argument("--no-show", action="store_true", help="do not display the figure")
     args = p.parse_args(argv)
 
-    start_dt = datetime.fromisoformat(args.start)
-    end_dt = datetime.fromisoformat(args.end)
+    try:
+        start_dt = datetime.fromisoformat(args.start)
+    except ValueError:
+        print(f"Invalid --start date: {args.start}", file=sys.stderr)
+        raise SystemExit(1)
+
+    try:
+        end_dt = datetime.fromisoformat(args.end)
+    except ValueError:
+        print(f"Invalid --end date: {args.end}", file=sys.stderr)
+        raise SystemExit(1)
 
     # ───────────────────────────────────────────────────────────────────────
     # Fetch both UNRATE and oil; UNRATE may contain NaNs if the last
