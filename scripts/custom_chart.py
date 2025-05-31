@@ -15,6 +15,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
+from scripts.constants import DB_PATH_DEFAULT
+
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -27,7 +29,7 @@ def fetch_series_multi(
     series: Iterable[str],
     start: datetime,
     end: datetime,
-    db_path: str | Path = Path("data/fred.db"),
+    db_path: str | Path = DB_PATH_DEFAULT,
 ) -> pd.DataFrame:
     """Load one or more FRED series from a local SQLite DB."""
     return fetch_series_db(series, start, end, db_path)
@@ -63,7 +65,12 @@ def main(argv: list[str] | None = None) -> plt.Figure:
         default=datetime.today().strftime("%Y-%m-%d"),
         help="end date YYYY-MM-DD",
     )
-    p.add_argument("--db", type=str, default="data/fred.db", help="path to SQLite DB")
+    p.add_argument(
+        "--db",
+        type=str,
+        default=str(DB_PATH_DEFAULT),
+        help="path to SQLite DB",
+    )
     p.add_argument(
         "--output",
         type=str,

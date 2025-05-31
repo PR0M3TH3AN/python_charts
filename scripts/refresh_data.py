@@ -20,13 +20,15 @@ import sqlite3
 from pandas_datareader.data import DataReader
 import pandas as pd
 
+from scripts.constants import DB_PATH_DEFAULT, UNRATE, DCOILWTICO
+
 HERE = pathlib.Path(__file__).resolve().parent
-DATA_PATH = HERE.parent / "data"
-DB_FILE = DATA_PATH / "fred.db"
+DATA_PATH = DB_PATH_DEFAULT.parent
+DB_FILE = DB_PATH_DEFAULT
 
 DEFAULT_START = "1948-01-01"  # earliest UNRATE observation
 DEFAULT_END = date.today().isoformat()
-DEFAULT_SERIES = ("UNRATE", "DCOILWTICO")
+DEFAULT_SERIES = (UNRATE, DCOILWTICO)
 
 
 def main(argv: list[str] | None = None) -> None:

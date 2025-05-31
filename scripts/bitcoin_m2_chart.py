@@ -15,6 +15,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Tuple
 
+from scripts.constants import DB_PATH_DEFAULT
+
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -29,7 +31,7 @@ def fetch_series(
     end: datetime,
     btc_series: str,
     m2_series: str,
-    db_path: str | Path = Path("data/fred.db"),
+    db_path: str | Path = DB_PATH_DEFAULT,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Load Bitcoin and M2 series from a local SQLite DB."""
     df = fetch_series_db([btc_series, m2_series], start, end, db_path)
@@ -113,7 +115,10 @@ def main(argv: list[str] | None = None) -> plt.Figure:
         "--extend-years", type=int, default=1, help="years beyond end date to show"
     )
     p.add_argument(
-        "--db", type=str, default="data/fred.db", help="path to local SQLite DB"
+        "--db",
+        type=str,
+        default=str(DB_PATH_DEFAULT),
+        help="path to local SQLite DB",
     )
     p.add_argument(
         "--output", type=str, default=None, help="optional path to save the figure"
