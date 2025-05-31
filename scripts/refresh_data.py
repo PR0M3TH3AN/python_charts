@@ -12,7 +12,7 @@ Example:
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 import argparse
 import pathlib
 import sqlite3
@@ -49,9 +49,33 @@ def main(argv: list[str] | None = None) -> None:
     DATA_PATH.mkdir(exist_ok=True)
     with sqlite3.connect(DB_FILE) as conn:
         for s in args.series:
+            start = pd.to_datetime(args.start)
+            end = pd.to_datetime(args.end)
+
+            last = None
+            table_exists = bool(
+                conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+                    (s,),
+                ).fetchone()
+            )
+            if table_exists:
+                last_row = conn.execute(f"SELECT MAX(date) FROM {s}").fetchone()
+                if last_row and last_row[0] is not None:
+                    last = pd.to_datetime(last_row[0])
+
+            new_start = start
+            if last is not None:
+                new_start = max(start, last + timedelta(days=1))
+
+            if new_start > end:
+                logger.info("%s up to date; last date %s", s, last.date() if last else "n/a")
+                continue
+
             logger.info("\u21af downloading %s …", s)
-            df = DataReader(s, "fred", args.start, args.end)
-            df.to_sql(s, conn, if_exists="replace", index_label="date")
+            df = DataReader(s, "fred", new_start.date().isoformat(), end.date().isoformat())
+            if_exists = "append" if table_exists else "replace"
+            df.to_sql(s, conn, if_exists=if_exists, index_label="date")
             logger.info("\u2713 wrote %s: %s rows", s, len(df))
     logger.info(
         "\nDone.  SQLite DB at %s (%s KB)",
