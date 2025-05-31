@@ -15,6 +15,8 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 
+from scripts.constants import DB_PATH_DEFAULT, UNRATE, DCOILWTICO
+
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
@@ -36,7 +38,7 @@ from scripts.common import (
 def fetch_series(
     start: datetime,
     end: datetime,
-    db_path: str | Path = Path("data/fred.db"),
+    db_path: str | Path = DB_PATH_DEFAULT,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Load UNRATE and DCOILWTICO from a local SQLite DB, then:
@@ -45,11 +47,11 @@ def fetch_series(
     * average WTI daily prices to month-end
     """
     # Read both series from SQLite
-    df = fetch_series_db(["UNRATE", "DCOILWTICO"], start, end, db_path)
+    df = fetch_series_db([UNRATE, DCOILWTICO], start, end, db_path)
     # Extract UNRATE and rename to 'value'
-    unrate = df[["UNRATE"]].rename(columns={"UNRATE": "value"})
+    unrate = df[[UNRATE]].rename(columns={UNRATE: "value"})
     # Extract DCOILWTICO (oil price) and rename to 'value'
-    oil = df[["DCOILWTICO"]].rename(columns={"DCOILWTICO": "value"})
+    oil = df[[DCOILWTICO]].rename(columns={DCOILWTICO: "value"})
 
     # Resample WTI to month-end average
     oil_monthly = oil.resample("M").mean()
@@ -61,9 +63,13 @@ def fetch_series(
 
 def validate_series(unrate: pd.DataFrame, oil: pd.DataFrame) -> None:
     """Run basic sanity checks on the two series."""
-    validate_dataframe(unrate, "UNRATE")        # Raises ValueError if UNRATE is empty, NaNs, or bad index
-    validate_dataframe(oil, "DCOILWTICO")       # Raises ValueError if oil is empty, NaNs, or bad index
-    validate_overlap(unrate, oil)               # Raises ValueError if no date overlap
+    validate_dataframe(
+        unrate, UNRATE
+    )  # Raises ValueError if UNRATE is empty, NaNs, or bad index
+    validate_dataframe(
+        oil, DCOILWTICO
+    )  # Raises ValueError if oil is empty, NaNs, or bad index
+    validate_overlap(unrate, oil)  # Raises ValueError if no date overlap
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -89,7 +95,9 @@ def plot_lagged(
     common_end = min(unrate.index.max(), oil.index.max())
 
     print(f"⚠️ Using overlapping range: {common_start.date()} to {common_end.date()}")
-    print(f"  - UNRATE range: {unrate.index.min().date()} to {unrate.index.max().date()}")
+    print(
+        f"  - UNRATE range: {unrate.index.min().date()} to {unrate.index.max().date()}"
+    )
     print(f"  - OIL    range: {oil.index.min().date()} to {oil.index.max().date()}")
 
     # Trim series to common range
@@ -215,7 +223,7 @@ def main() -> plt.Figure:
     p.add_argument(
         "--db",
         type=str,
-        default="data/fred.db",
+        default=str(DB_PATH_DEFAULT),
         help="path to local FRED SQLite file",
     )
     p.add_argument(

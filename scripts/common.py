@@ -5,6 +5,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
+from scripts.constants import DB_PATH_DEFAULT
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import sqlite3
@@ -28,7 +30,7 @@ def fetch_series_db(
     series: Iterable[str],
     start: datetime,
     end: datetime,
-    db_path: str | Path = Path("data/fred.db"),
+    db_path: str | Path = DB_PATH_DEFAULT,
 ) -> pd.DataFrame:
     """
     Load one or more FRED series from a local SQLite DB.
