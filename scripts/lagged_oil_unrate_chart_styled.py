@@ -21,8 +21,8 @@ import matplotlib.ticker as mticker
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 
-# IMPORTANT: import common directly (no "scripts." prefix)
-from common import (
+# IMPORTANT: use the package‐qualified import
+from scripts.common import (
     fetch_series_db,
     save_figure,
     validate_dataframe,
@@ -45,16 +45,16 @@ def fetch_series(
     * average WTI daily prices to month-end
     """
     # Read both series from SQLite
-    df = fetch_series_db(["UNRATE", "DCOILWTICO"], start, end, db_path)  # :contentReference[oaicite:0]{index=0}
+    df = fetch_series_db(["UNRATE", "DCOILWTICO"], start, end, db_path)
     # Extract UNRATE and rename to 'value'
     unrate = df[["UNRATE"]].rename(columns={"UNRATE": "value"})
     # Extract DCOILWTICO (oil price) and rename to 'value'
-    oil    = df[["DCOILWTICO"]].rename(columns={"DCOILWTICO": "value"})
+    oil = df[["DCOILWTICO"]].rename(columns={"DCOILWTICO": "value"})
 
     # Resample WTI to month-end average
-    oil_monthly = oil.resample("M").mean()  # :contentReference[oaicite:1]{index=1}
+    oil_monthly = oil.resample("M").mean()
     # Ensure UNRATE is at month-end, too
-    unrate.index = unrate.index.to_period("M").to_timestamp("M")  # :contentReference[oaicite:2]{index=2}
+    unrate.index = unrate.index.to_period("M").to_timestamp("M")
 
     return unrate, oil_monthly
 
@@ -86,7 +86,7 @@ def plot_lagged(
     """
     # Find overlapping date range
     common_start = max(unrate.index.min(), oil.index.min())
-    common_end   = min(unrate.index.max(), oil.index.max())
+    common_end = min(unrate.index.max(), oil.index.max())
 
     print(f"⚠️ Using overlapping range: {common_start.date()} to {common_end.date()}")
     print(f"  - UNRATE range: {unrate.index.min().date()} to {unrate.index.max().date()}")
@@ -94,10 +94,10 @@ def plot_lagged(
 
     # Trim series to common range
     unrate_common = unrate.loc[common_start:common_end]
-    oil_common    = oil.loc[common_start:common_end]
+    oil_common = oil.loc[common_start:common_end]
 
     # Apply lag/lead
-    oil_shifted = oil_common.shift(offset_months)  # Shift by given months
+    oil_shifted = oil_common.shift(offset_months)
 
     fig, ax1 = plt.subplots(figsize=(14, 7))
     plt.title("Unemployment Rate and US Oil Price", fontsize=20, weight="bold")
@@ -136,8 +136,8 @@ def plot_lagged(
 
     # Build doubling ticks from $3 upward
     min_tick = 3
-    max_val  = oil_shifted["value"].max() * 1.1
-    ticks    = []
+    max_val = oil_shifted["value"].max() * 1.1
+    ticks = []
     i = 0
     while min_tick * 2**i < max_val:
         ticks.append(min_tick * 2**i)
@@ -158,7 +158,7 @@ def plot_lagged(
 
     # Legends
     lines, labels = ax1.get_legend_handles_labels()
-    l2, l2l       = ax2.get_legend_handles_labels()
+    l2, l2l = ax2.get_legend_handles_labels()
     ax1.legend(lines + l2, labels + l2l, loc="upper left", frameon=False, fontsize=12)
 
     # Footnote with actual ranges
@@ -227,7 +227,7 @@ def main() -> plt.Figure:
     args = p.parse_args()
 
     start_dt = datetime.fromisoformat(args.start)
-    end_dt   = datetime.fromisoformat(args.end)
+    end_dt = datetime.fromisoformat(args.end)
 
     # ───────────────────────────────────────────────────────────────────────
     # Fetch both UNRATE and oil; UNRATE may contain NaNs if the last
@@ -237,12 +237,12 @@ def main() -> plt.Figure:
     unrate, oil = fetch_series(start_dt, end_dt, args.db)
 
     # Forward‐fill UNRATE to propagate the last known value into any NaN gaps
-    unrate["value"] = unrate["value"].ffill()  # :contentReference[oaicite:3]{index=3}
+    unrate["value"] = unrate["value"].ffill()
     # Drop any rows where UNRATE is still NaN (e.g., if the entire series started after 'start')
-    unrate = unrate.dropna(subset=["value"])   # :contentReference[oaicite:4]{index=4}
+    unrate = unrate.dropna(subset=["value"])
 
     # Drop any rows in 'oil' where the value is NaN (ensures no Nulls remain)
-    oil = oil.dropna(subset=["value"])         # :contentReference[oaicite:5]{index=5}
+    oil = oil.dropna(subset=["value"])
 
     # Align oil to only dates present in UNRATE after cleaning
     oil = oil.loc[oil.index.isin(unrate.index)]

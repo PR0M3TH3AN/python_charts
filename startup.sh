@@ -12,7 +12,7 @@ set -euo pipefail
 
 REQ_FILE="requirements.txt"
 DATA_DB="data/fred.db"
-DEFAULT_SCRIPT="scripts/lagged_oil_unrate_chart_styled.py"
+DEFAULT_MODULE="scripts.lagged_oil_unrate_chart_styled"
 
 # 1) Ensure pip & setuptools are up to date
 echo "🛠 Upgrading pip & setuptools…"
@@ -25,19 +25,20 @@ pip install --upgrade -r "$REQ_FILE"
 # 3) Ensure data exists
 if [[ ! -f "$DATA_DB" ]]; then
   echo "🔄 Data not found—downloading FRED series…"
-  python scripts/refresh_data.py
+  python -m scripts.refresh_data
 fi
 
 # 4) Dispatch to the right command
 if [[ $# -eq 0 ]]; then
-  # no args → run default plot
-  CMD=(python "$DEFAULT_SCRIPT" --offset 18)
+  # no args → run default plot module with offset 18
+  CMD=(python -m "$DEFAULT_MODULE" --offset 18)
 elif [[ "$1" == --* ]]; then
-  # args start with -- → forward to default plot
-  CMD=(python "$DEFAULT_SCRIPT" "$@")
+  # args start with -- → forward to default plot module
+  CMD=(python -m "$DEFAULT_MODULE" "$@")
 else
   # first token is script or other command
   if [[ -f "$1" || "$1" == *.py ]]; then
+    # If they explicitly say “scripts/whatever.py …” or “some_test.py …”, run as script
     CMD=(python "$@")
   else
     CMD=("$@")

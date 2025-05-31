@@ -20,8 +20,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from dateutil.relativedelta import relativedelta
 
-# IMPORTANT: import common directly (no "scripts." prefix)
-from common import fetch_series_db, save_figure
+# IMPORTANT: use the package‐qualified import
+from scripts.common import fetch_series_db, save_figure
 
 
 def fetch_series(
