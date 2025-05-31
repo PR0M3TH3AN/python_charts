@@ -22,6 +22,20 @@ from dateutil.relativedelta import relativedelta
 import sqlite3
 
 
+def save_figure(fig: plt.Figure, output: str | None, script_path: str) -> Path:
+    """Save ``fig`` to ``output`` or a timestamped path under ``outputs/``."""
+    out_path = (
+        Path(output)
+        if output is not None
+        else Path("outputs")
+        / f"{Path(script_path).stem}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png"
+    )
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out_path)
+    print(f"Saved figure to {out_path}")
+    return out_path
+
+
 def fetch_series(
     start: datetime,
     end: datetime,
@@ -140,8 +154,7 @@ def main(argv: list[str] | None = None) -> plt.Figure:
     btc, m2 = fetch_series(start_dt, end_dt, args.btc_series, args.m2_series, args.db)
     fig = plot_bitcoin_m2(btc, m2, args.offset_days, args.extend_years)
 
-    if args.output:
-        fig.savefig(args.output)
+    save_figure(fig, args.output, __file__)
     if argv is None:
         fig.show()
     return fig
