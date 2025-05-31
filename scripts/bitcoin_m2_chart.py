@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """bitcoin_m2_chart.py
 ----------------------
-Plot Bitcoin price versus global M2 money supply stored in ``data/fred.db``.
+Plot Bitcoin price versus global M2 money supply stored in `data/fred.db`.
 
 The script reads two FRED series from the local SQLite database and
 plots them on dual axes. The M2 series can be shifted relative to the
@@ -19,6 +19,8 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
 from dateutil.relativedelta import relativedelta
+
+# IMPORTANT: import common directly (no "scripts." prefix)
 from common import fetch_series_db, save_figure
 
 

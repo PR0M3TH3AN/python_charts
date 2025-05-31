@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from __future__ import annotations
 
 from datetime import datetime
@@ -10,7 +11,7 @@ import sqlite3
 
 
 def save_figure(fig: plt.Figure, output: str | None, script_path: str) -> Path:
-    """Save ``fig`` to ``output`` or ``outputs/`` with timestamp."""
+    """Save `fig` to `output` or `outputs/` with a timestamped filename."""
     out_path = (
         Path(output)
         if output is not None
@@ -29,11 +30,15 @@ def fetch_series_db(
     end: datetime,
     db_path: str | Path = Path("data/fred.db"),
 ) -> pd.DataFrame:
-    """Load one or more FRED series from a local SQLite DB."""
+    """
+    Load one or more FRED series from a local SQLite DB.
+    Returns a DataFrame whose columns are the requested series names.
+    """
     db_path = Path(db_path)
     if not db_path.exists():
         raise FileNotFoundError(
-            f"{db_path} not found. Run scripts/refresh_data.py on a machine with internet, commit the DB, then retry."
+            f"{db_path} not found. Run scripts/refresh_data.py on a machine with internet access,"
+            " commit the DB, then retry."
         )
 
     frames: list[pd.DataFrame] = []
@@ -55,7 +60,7 @@ def fetch_series_db(
 
 
 def validate_dataframe(df: pd.DataFrame, name: str) -> None:
-    """Ensure dataframe has a ``value`` column with data and DatetimeIndex."""
+    """Ensure DataFrame has a 'value' column with no nulls and a DatetimeIndex."""
     if df.empty:
         raise ValueError(f"{name} dataframe is empty")
     if "value" not in df.columns:
@@ -63,7 +68,7 @@ def validate_dataframe(df: pd.DataFrame, name: str) -> None:
     if df["value"].isna().any():
         raise ValueError(f"{name} contains null values")
     if not isinstance(df.index, pd.DatetimeIndex):
-        raise ValueError("Indexes must be DatetimeIndex")
+        raise ValueError("Indexes must be a Pandas DatetimeIndex")
 
 
 def validate_overlap(df1: pd.DataFrame, df2: pd.DataFrame) -> None:

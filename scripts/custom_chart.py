@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""custom_chart.py
-------------------
-Plot arbitrary FRED series stored in ``data/fred.db``.
+"""
+custom_chart.py
+---------------
+Plot arbitrary FRED series stored in `data/fred.db`.
 
 Example:
     python scripts/custom_chart.py --series UNRATE DCOILWTICO --start 2000-01-01 --end 2020-12-31
@@ -17,7 +18,10 @@ from typing import Iterable
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
+
+# IMPORTANT: import common directly (no "scripts." prefix)
 from common import fetch_series_db, save_figure
+
 
 def fetch_series_multi(
     series: Iterable[str],
@@ -30,7 +34,7 @@ def fetch_series_multi(
 
 
 def plot_series(df: pd.DataFrame) -> plt.Figure:
-    """Plot each column of ``df`` on a shared axis."""
+    """Plot each column of `df` on a shared axis."""
     fig, ax = plt.subplots(figsize=(10, 5))
     for col in df.columns:
         ax.plot(df.index, df[col], label=col)

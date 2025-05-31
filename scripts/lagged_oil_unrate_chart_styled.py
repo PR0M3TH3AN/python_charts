@@ -2,10 +2,11 @@
 """
 lagged_oil_unrate_chart_styled.py
 ---------------------------------
-Offline version: reads UNRATE & WTI series from ``data/fred.db``
-(populated by ``scripts/refresh_data.py``), validates that both series
-contain data for the requested period (overlap only), and plots them
-with a configurable lag.
+Offline version: reads UNRATE & WTI series from `data/fred.db`
+(populated by `scripts/refresh_data.py`), forward‐fills any NaNs
+in the UNRATE series, drops remaining NaNs in both series to maintain
+purity, validates that both series contain data for the requested period
+(overlap only), and plots them with a configurable lag.
 """
 
 from __future__ import annotations
@@ -19,7 +20,9 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import pandas as pd
 from dateutil.relativedelta import relativedelta
-from scripts.common import (
+
+# IMPORTANT: import common directly (no "scripts." prefix)
+from common import (
     fetch_series_db,
     save_figure,
     validate_dataframe,
@@ -41,22 +44,26 @@ def fetch_series(
     * convert UNRATE to month-end timestamps
     * average WTI daily prices to month-end
     """
-    df = fetch_series_db(["UNRATE", "DCOILWTICO"], start, end, db_path)
+    # Read both series from SQLite
+    df = fetch_series_db(["UNRATE", "DCOILWTICO"], start, end, db_path)  # :contentReference[oaicite:0]{index=0}
+    # Extract UNRATE and rename to 'value'
     unrate = df[["UNRATE"]].rename(columns={"UNRATE": "value"})
-    oil = df[["DCOILWTICO"]].rename(columns={"DCOILWTICO": "value"})
+    # Extract DCOILWTICO (oil price) and rename to 'value'
+    oil    = df[["DCOILWTICO"]].rename(columns={"DCOILWTICO": "value"})
 
     # Resample WTI to month-end average
-    oil_monthly = oil.resample("M").mean()
+    oil_monthly = oil.resample("M").mean()  # :contentReference[oaicite:1]{index=1}
     # Ensure UNRATE is at month-end, too
-    unrate.index = unrate.index.to_period("M").to_timestamp("M")
+    unrate.index = unrate.index.to_period("M").to_timestamp("M")  # :contentReference[oaicite:2]{index=2}
+
     return unrate, oil_monthly
 
 
 def validate_series(unrate: pd.DataFrame, oil: pd.DataFrame) -> None:
     """Run basic sanity checks on the two series."""
-    validate_dataframe(unrate, "UNRATE")
-    validate_dataframe(oil, "DCOILWTICO")
-    validate_overlap(unrate, oil)
+    validate_dataframe(unrate, "UNRATE")        # Raises ValueError if UNRATE is empty, NaNs, or bad index
+    validate_dataframe(oil, "DCOILWTICO")       # Raises ValueError if oil is empty, NaNs, or bad index
+    validate_overlap(unrate, oil)               # Raises ValueError if no date overlap
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -79,20 +86,18 @@ def plot_lagged(
     """
     # Find overlapping date range
     common_start = max(unrate.index.min(), oil.index.min())
-    common_end = min(unrate.index.max(), oil.index.max())
+    common_end   = min(unrate.index.max(), oil.index.max())
 
     print(f"⚠️ Using overlapping range: {common_start.date()} to {common_end.date()}")
-    print(
-        f"  - UNRATE range: {unrate.index.min().date()} to {unrate.index.max().date()}"
-    )
-    print(f"  - OIL range: {oil.index.min().date()} to {oil.index.max().date()}")
+    print(f"  - UNRATE range: {unrate.index.min().date()} to {unrate.index.max().date()}")
+    print(f"  - OIL    range: {oil.index.min().date()} to {oil.index.max().date()}")
 
     # Trim series to common range
     unrate_common = unrate.loc[common_start:common_end]
-    oil_common = oil.loc[common_start:common_end]
+    oil_common    = oil.loc[common_start:common_end]
 
     # Apply lag/lead
-    oil_shifted = oil_common.shift(offset_months)
+    oil_shifted = oil_common.shift(offset_months)  # Shift by given months
 
     fig, ax1 = plt.subplots(figsize=(14, 7))
     plt.title("Unemployment Rate and US Oil Price", fontsize=20, weight="bold")
@@ -131,8 +136,8 @@ def plot_lagged(
 
     # Build doubling ticks from $3 upward
     min_tick = 3
-    max_val = oil_shifted["value"].max() * 1.1
-    ticks = []
+    max_val  = oil_shifted["value"].max() * 1.1
+    ticks    = []
     i = 0
     while min_tick * 2**i < max_val:
         ticks.append(min_tick * 2**i)
@@ -153,13 +158,13 @@ def plot_lagged(
 
     # Legends
     lines, labels = ax1.get_legend_handles_labels()
-    l2, l2l = ax2.get_legend_handles_labels()
+    l2, l2l       = ax2.get_legend_handles_labels()
     ax1.legend(lines + l2, labels + l2l, loc="upper left", frameon=False, fontsize=12)
 
     # Footnote with actual ranges
     foot = (
         f"UNRATE: {unrate.index.min().strftime('%b %Y')}–{unrate.index.max().strftime('%b %Y')} | "
-        f"OIL: {oil.index.min().strftime('%b %Y')}–{oil.index.max().strftime('%b %Y')}\n"
+        f"OIL:    {oil.index.min().strftime('%b %Y')}–{oil.index.max().strftime('%b %Y')}\n"
         "Source: Local FRED snapshot (offline)."
     )
     plt.annotate(
@@ -222,9 +227,26 @@ def main() -> plt.Figure:
     args = p.parse_args()
 
     start_dt = datetime.fromisoformat(args.start)
-    end_dt = datetime.fromisoformat(args.end)
+    end_dt   = datetime.fromisoformat(args.end)
 
+    # ───────────────────────────────────────────────────────────────────────
+    # Fetch both UNRATE and oil; UNRATE may contain NaNs if the last
+    # month’s data has not yet been published. We forward‐fill UNRATE
+    # (option B), then drop any remaining NaNs in both series.
+    # ───────────────────────────────────────────────────────────────────────
     unrate, oil = fetch_series(start_dt, end_dt, args.db)
+
+    # Forward‐fill UNRATE to propagate the last known value into any NaN gaps
+    unrate["value"] = unrate["value"].ffill()  # :contentReference[oaicite:3]{index=3}
+    # Drop any rows where UNRATE is still NaN (e.g., if the entire series started after 'start')
+    unrate = unrate.dropna(subset=["value"])   # :contentReference[oaicite:4]{index=4}
+
+    # Drop any rows in 'oil' where the value is NaN (ensures no Nulls remain)
+    oil = oil.dropna(subset=["value"])         # :contentReference[oaicite:5]{index=5}
+
+    # Align oil to only dates present in UNRATE after cleaning
+    oil = oil.loc[oil.index.isin(unrate.index)]
+
     validate_series(unrate, oil)
     fig = plot_lagged(unrate, oil, args.offset, start_dt, end_dt, args.extend_years)
     save_figure(fig, args.output, __file__)

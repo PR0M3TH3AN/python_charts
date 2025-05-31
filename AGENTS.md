@@ -9,6 +9,41 @@
 
 * **Never** call `refresh_data.py` from within a Task Command. This environment has **no internet access**, so attempts to fetch external data will fail. Data in `data/fred.db` must already be present.
 
+## Policy for Handling UNRATE Null Values
+
+When generating the UNRATE vs. Oil chart, the UNRATE series may include a `NaN` for the most recent month if that month’s data has not yet been published. To prevent the script from raising a `ValueError: UNRATE contains null values`, follow this policy:
+
+1. **Clamp to Last Valid Index**
+
+   * After loading `unrate` and `oil` with `fetch_series(...)`, immediately determine the last non-NaN date in the `unrate` DataFrame using:
+
+     ```python
+     last_date = unrate.last_valid_index()
+     ```
+   * Truncate both `unrate` and `oil` so that any trailing `NaN` row in `unrate` (and corresponding index in `oil`) is removed:
+
+     ```python
+     unrate = unrate.loc[:last_date]
+     oil    = oil.loc[:last_date]
+     ```
+   * Only after this truncation should you call `validate_series(unrate, oil)`. This ensures that neither DataFrame contains nulls and that they share a valid overlapping date range.
+
+2. **Rationale**
+
+   * Doing a forward-fill or dropping all NaNs could inadvertently hide missing data or distort recent observations. Clamping to the last officially published month preserves data purity.
+   * By slicing both series at `last_valid_index()`, you ensure that the chart is plotted only with officially released data and no “estimate” for the current month.
+
+3. **Implementation in `lagged_oil_unrate_chart_styled.py`**
+
+   * Right after `unrate, oil = fetch_series(start_dt, end_dt, args.db)`, insert:
+
+     ```python
+     last_date = unrate.last_valid_index()
+     unrate = unrate.loc[:last_date]
+     oil    = oil.loc[:last_date]
+     ```
+   * Then proceed to `validate_series(unrate, oil)` and the usual plotting logic.
+
 ## Project Overview
 
 This repository, **python\_charts**, provides a framework for fetching economic time series from FRED, storing them locally, and producing custom matplotlib charts with configurable parameters. The core components are:
@@ -17,6 +52,8 @@ This repository, **python\_charts**, provides a framework for fetching economic 
 * **`Makefile`**: Convenient high‐level targets (`install`, `data`, `plot`, `plot‐custom`, `test`, `clean`) that funnel through `startup.sh` for reproducible builds.
 * **`scripts/refresh_data.py`**: Downloads UNRATE and DCOILWTICO series into `data/fred.db`—**only run in an internet-connected environment**, not in Codex/CI.
 * **`scripts/lagged_oil_unrate_chart_styled.py`**: Generates the lagged oil vs. unemployment chart with fixed axes styling and log scale.
+* **`scripts/bitcoin_m2_chart.py`**: Produces a Bitcoin vs. global M2 overlay chart with adjustable day offset.
+* **`scripts/custom_chart.py`**: Plots arbitrary FRED series stored in `data/fred.db`.
 
 Future extensions will add additional custom chart scripts under `scripts/`, all driven by the same bootstrapping and command conventions.
 
@@ -30,7 +67,7 @@ Future extensions will add additional custom chart scripts under `scripts/`, all
   ./startup.sh
   ```
 
-  Installs/upgrades dependencies globally and runs the default lagged‐oil chart with an 18-month offset.
+  Installs/upgrades dependencies globally and runs the default lagged‐oil chart with an 18‐month offset.
 
 * **Custom plot**:
 
@@ -41,7 +78,7 @@ Future extensions will add additional custom chart scripts under `scripts/`, all
 * **Data refresh (offline environments)**:
 
   * **Do not** run `refresh_data.py` in Codex/CI — data must already be in `data/fred.db`.
-  * To update data in an internet-connected shell, run:
+  * To update data in an internet‐connected shell, run:
 
     ```bash
     python scripts/refresh_data.py
@@ -63,7 +100,7 @@ Future extensions will add additional custom chart scripts under `scripts/`, all
 
 * **Python**: Target version ≥ 3.8. Use type hints for all function signatures. Follow PEP8 with Black formatting.
 * **Bash**: `startup.sh` uses `set -euo pipefail`.
-* **Makefile**: Use tab-indented commands. All targets should funnel through `startup.sh`.
+* **Makefile**: Use tab‐indented commands. All targets should funnel through `startup.sh`.
 
 ## Testing & Validation
 
@@ -94,5 +131,3 @@ Future extensions will add additional custom chart scripts under `scripts/`, all
   ```bash
   ./startup.sh --offset 18
   ```
-
-*End of AGENTS.md — tailored for python\_charts repo*
