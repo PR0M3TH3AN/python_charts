@@ -12,10 +12,10 @@ data:
 plot:
 	./startup.sh
 
-# Custom plot
-# Usage: make plot-custom ARGS="--offset 12 --end 2025-05-31 --extend-years 5"
+# Custom plot of arbitrary series
+# Usage: make plot-custom ARGS="--series UNRATE CPIAUCSL --start 2000-01-01"
 plot-custom:
-	./startup.sh $(ARGS)
+        ./startup.sh python scripts/custom_chart.py $(ARGS)
 
 # Run tests
 test:

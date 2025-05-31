@@ -80,6 +80,23 @@ requested period before rendering the chart.
 | `--end`          | End date (YYYY-MM-DD)                           |
 | `--extend-years` | Years to extend the x-axis beyond the end date  |
 
+## Custom Charts
+
+Plot any combination of FRED series stored in `data/fred.db` using
+`scripts/custom_chart.py`.
+
+```bash
+# Example: unemployment and oil
+./startup.sh python scripts/custom_chart.py \
+    --series UNRATE DCOILWTICO --start 2000-01-01 --end 2020-12-31
+```
+
+The same invocation is available via Make:
+
+```bash
+make plot-custom ARGS="--series UNRATE DCOILWTICO --start 2000-01-01 --end 2020-12-31"
+```
+
 ---
 
 ## 📝 Details
