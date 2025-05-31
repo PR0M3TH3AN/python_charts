@@ -8,7 +8,7 @@ import pandas as pd
 
 sys.path.append(os.path.abspath("."))
 
-from scripts.lagged_oil_unrate_chart_styled import plot_lagged
+from scripts.lagged_oil_unrate_chart_styled import plot_lagged, main as lagged_main
 from scripts.custom_chart import plot_series, main as custom_main
 
 
@@ -64,3 +64,18 @@ def test_custom_main_saves_output(tmp_path):
         ]
     )
     assert out_file.exists()
+
+
+def test_lagged_main_options(monkeypatch):
+    dates = pd.date_range("2021-01-01", periods=3, freq="M")
+    unrate = pd.DataFrame({"value": [1, 2, 3]}, index=dates)
+    oil = pd.DataFrame({"value": [4, 5, 6]}, index=dates)
+
+    monkeypatch.setattr(
+        "scripts.lagged_oil_unrate_chart_styled.fetch_series", lambda *_: (unrate, oil)
+    )
+
+    fig = lagged_main(
+        ["--offset", "1", "--width", "8", "--height", "4", "--dpi", "150", "--no-show"]
+    )
+    assert len(fig.axes) == 2

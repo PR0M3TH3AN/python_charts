@@ -32,7 +32,19 @@ def test_btc_m2_main(monkeypatch):
         return btc, m2
 
     monkeypatch.setattr("scripts.bitcoin_m2_chart.fetch_series", fake_fetch)
-    fig = btc_m2_main(["--btc-series", "BTC", "--m2-series", "M2"])
+    fig = btc_m2_main([
+        "--btc-series",
+        "BTC",
+        "--m2-series",
+        "M2",
+        "--width",
+        "8",
+        "--height",
+        "4",
+        "--dpi",
+        "150",
+        "--no-show",
+    ])
     assert len(fig.axes) == 2
 
 
@@ -52,6 +64,13 @@ def test_btc_m2_main_saves_output(tmp_path, monkeypatch):
             "M2",
             "--output",
             str(out_file),
+            "--width",
+            "8",
+            "--height",
+            "4",
+            "--dpi",
+            "150",
+            "--no-show",
         ]
     )
     assert out_file.exists()
