@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # -------------------------------------------------------------------
-# startup.sh  — install deps globally, fetch data, then run command
+# startup.sh  — install deps in .venv, fetch data, then run command
 # Usage:
 #   ./startup.sh [options]       # passes options to default plot script
-#   ./startup.sh <script> [args] # runs specified script with system Python
+#   ./startup.sh <script> [args] # runs specified script with venv Python
 # Examples:
 #   ./startup.sh --offset 12 --end 2025-05-31 --extend-years 5
 #   ./startup.sh pytest -q
@@ -13,6 +13,15 @@ set -euo pipefail
 REQ_FILE="requirements.txt"
 DATA_DB="data/fred.db"
 DEFAULT_MODULE="scripts.lagged_oil_unrate_chart_styled"
+VENV_DIR=".venv"
+
+# 0) Create or activate virtual environment
+if [[ ! -d "$VENV_DIR" ]]; then
+  echo "📂 Creating virtual environment in $VENV_DIR…"
+  python -m venv "$VENV_DIR"
+fi
+# shellcheck source=/dev/null
+source "$VENV_DIR/bin/activate"
 
 # 1) Ensure pip & setuptools are up to date
 echo "🛠 Upgrading pip & setuptools…"
@@ -22,7 +31,7 @@ else
   pip install --upgrade pip setuptools
 fi
 
-# 2) Install project dependencies globally
+# 2) Install project dependencies in the venv
 echo "📦 Installing dependencies from $REQ_FILE…"
 pip install --upgrade -r "$REQ_FILE"
 

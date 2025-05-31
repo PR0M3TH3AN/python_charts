@@ -1,6 +1,7 @@
 # Byte-code / venv
 __pycache__/
 venv/
+.venv/
 
 # Local data & wheels
 wheelhouse/*.log

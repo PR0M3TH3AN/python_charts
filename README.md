@@ -21,8 +21,8 @@ cd python_charts
 
 This will:
 
-1. Upgrade `pip` & `setuptools` globally
-2. Install required packages from `requirements.txt` via
+1. Create a `.venv` virtual environment (if needed) and upgrade `pip` & `setuptools` inside it
+2. Install required packages from `requirements.txt` into that environment via
 
    ```bash
    pip install --upgrade -r requirements.txt
@@ -247,7 +247,7 @@ Once the data is present, generate the Bitcoin‐Global M2 overlay chart:
 
 ## 📦 Dependencies
 
-All Python dependencies are listed in `requirements.txt` and are installed by `./startup.sh`:
+All Python dependencies are listed in `requirements.txt` and are installed by `./startup.sh` into `.venv`:
 
 ```text
 pandas>=1.5.0
