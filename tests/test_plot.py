@@ -45,3 +45,22 @@ def test_plot_series_and_main():
     )
     assert len(fig2.axes) == 1
     assert any(fig2.axes[0].get_lines())
+
+
+def test_custom_main_saves_output(tmp_path):
+    out_file = tmp_path / "chart.png"
+    custom_main(
+        [
+            "--series",
+            "UNRATE",
+            "--start",
+            "2020-01-01",
+            "--end",
+            "2020-03-01",
+            "--db",
+            "data/fred.db",
+            "--output",
+            str(out_file),
+        ]
+    )
+    assert out_file.exists()
