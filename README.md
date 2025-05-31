@@ -1,10 +1,21 @@
-# Python Charts
+# Python Charts [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 This initial chart is a self‐contained toolkit that:
 
 * Fetches U.S. unemployment rate (UNRATE) and WTI crude oil price (DCOILWTICO) from FRED :contentReference[oaicite:1]{index=1}  
 * Stores the series in a local SQLite database (`data/fred.db`) :contentReference[oaicite:2]{index=2}  
 * Produces a dual‐axis plot of unemployment vs. lagged oil price, with customizable lag, date range, and styling :contentReference[oaicite:3]{index=3}  
+
+## Table of Contents
+- [Quickstart](#quickstart)
+- [Repository Structure](#repository-structure)
+- [Usage](#usage)
+- [Custom Charts](#custom-charts)
+- [Details](#details)
+- [Dependencies](#dependencies)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+
 
 ---
 
