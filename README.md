@@ -55,7 +55,7 @@ python_charts/
 ### Refresh FRED data
 
 ```bash
-./startup.sh python scripts/refresh_data.py --series UNRATE CPIAUCSL --start 1960-01-01
+./startup.sh python scripts/refresh_data.py --series UNRATE CPIAUCSL --start 1960-01-01 --output outputs/chart.png
 ```
 
 Downloads UNRATE and WTI series (from 1948 to today) into `data/fred.db`.
@@ -124,7 +124,7 @@ make plot-custom ARGS="--series UNRATE DCOILWTICO --start 2000-01-01 --end 2020-
 After downloading the required series into `data/fred.db`, generate the Bitcoin overlay chart:
 
 ```bash
-./startup.sh python scripts/bitcoin_m2_chart.py --btc-series CBBTCUSD --m2-series GLOBAL_M2
+./startup.sh python scripts/bitcoin_m2_chart.py --btc-series CBBTCUSD --m2-series GLOBAL_M2 --output outputs/chart.png
 ```
 
 
