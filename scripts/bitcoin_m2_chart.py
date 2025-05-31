@@ -14,6 +14,7 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 from typing import Tuple
+import sys
 
 from scripts.constants import DB_PATH_DEFAULT
 
@@ -147,8 +148,17 @@ def main(argv: list[str] | None = None) -> plt.Figure:
     p.add_argument("--no-show", action="store_true", help="do not display the figure")
     args = p.parse_args(argv)
 
-    start_dt = datetime.fromisoformat(args.start)
-    end_dt = datetime.fromisoformat(args.end)
+    try:
+        start_dt = datetime.fromisoformat(args.start)
+    except ValueError:
+        print(f"Invalid --start date: {args.start}", file=sys.stderr)
+        raise SystemExit(1)
+
+    try:
+        end_dt = datetime.fromisoformat(args.end)
+    except ValueError:
+        print(f"Invalid --end date: {args.end}", file=sys.stderr)
+        raise SystemExit(1)
 
     btc, m2 = fetch_series(start_dt, end_dt, args.btc_series, args.m2_series, args.db)
     validate_series(btc, m2, args.btc_series, args.m2_series)

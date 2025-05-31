@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime
+import sys
 from pathlib import Path
 from typing import Iterable
 
@@ -79,8 +80,17 @@ def main(argv: list[str] | None = None) -> plt.Figure:
     )
     args = p.parse_args(argv)
 
-    start_dt = datetime.fromisoformat(args.start)
-    end_dt = datetime.fromisoformat(args.end)
+    try:
+        start_dt = datetime.fromisoformat(args.start)
+    except ValueError:
+        print(f"Invalid --start date: {args.start}", file=sys.stderr)
+        raise SystemExit(1)
+
+    try:
+        end_dt = datetime.fromisoformat(args.end)
+    except ValueError:
+        print(f"Invalid --end date: {args.end}", file=sys.stderr)
+        raise SystemExit(1)
 
     data = fetch_series_multi(args.series, start_dt, end_dt, args.db)
     fig = plot_series(data)
