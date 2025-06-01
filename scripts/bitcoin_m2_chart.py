@@ -351,10 +351,19 @@ def main(argv: list[str] | None = None) -> plt.Figure:
     # 15) FETCH SERIES
     # ──────────────────────────────────────────────────────────────────────────
     try:
-        btc, m2 = fetch_series(start_dt, end_dt, args.btc_series, args.m2_series, args.db)
+        btc, m2 = fetch_series(
+            start_dt, end_dt, args.btc_series, args.m2_series, args.db
+        )
     except FileNotFoundError as fnf:
         print(fnf, file=sys.stderr)
         sys.exit(1)
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # DROP ANY ROWS WITH NULL "value" BEFORE VALIDATION
+    # ──────────────────────────────────────────────────────────────────────────
+    # (GLOBAL_M2 often has one or two trailing NaNs for "unpublished" months.)
+    btc = btc.dropna(subset=["value"])
+    m2 = m2.dropna(subset=["value"])
 
     # If either series is empty, print a friendly message and exit:
     if btc.empty:
