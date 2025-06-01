@@ -1,15 +1,26 @@
 # AGENTS.md — Guidance for OpenAI Codex
 
 ## Execution Commands
-- **Always** invoke Python scripts via the `startup.sh` wrapper, which installs dependencies globally and then runs your code under the system Python. In particular, don’t run a `.py` file directly if it uses imports like `from scripts.common …`. Instead, run it as a module or let `startup.sh` handle it. For example:
+- **Always** invoke Python scripts via the `startup.sh` wrapper using its chart
+  aliases. The typical invocation is:
 
   ```bash
-  # Preferred: let startup.sh dispatch to scripts.lagged_oil_unrate_chart_styled
-  ./startup.sh --offset <months> --end <YYYY-MM-DD> --extend-years <N>
+  ./startup.sh lagged_oil_unrate --offset <months> --end <YYYY-MM-DD> --extend-years <N>
+  ```
 
-  # Or explicitly in module mode, so that 'scripts' is on PYTHONPATH:
+  Available aliases:
+
+  | Alias               | Module                                   |
+  | ------------------- | -----------------------------------------|
+  | `lagged_oil_unrate` | `scripts.lagged_oil_unrate_chart_styled`  |
+  | `bitcoin_m2`        | `scripts.bitcoin_m2_chart`                |
+  | `custom_chart`      | `scripts.custom_chart`                    |
+
+  You can still call a module explicitly if needed:
+
+  ```bash
   ./startup.sh python -m scripts.lagged_oil_unrate_chart_styled --offset <months> --end <YYYY-MM-DD> --extend-years <N>
-````
+  ```
 
 * Running a script this way ensures that `import scripts.common` (and other `scripts.*` imports) resolve correctly.
 
@@ -90,7 +101,7 @@ Future extensions will add additional custom chart scripts under `scripts/`, all
 * **Custom plot**:
 
   ```bash
-  ./startup.sh --offset 12 --end 2025-05-31 --extend-years 5
+  ./startup.sh lagged_oil_unrate --offset 12 --end 2025-05-31 --extend-years 5
   ```
 
   (Equivalent to `./startup.sh python -m scripts.lagged_oil_unrate_chart_styled --offset 12 --end 2025-05-31 --extend-years 5`.)
@@ -104,11 +115,6 @@ Future extensions will add additional custom chart scripts under `scripts/`, all
     python scripts/refresh_data.py --series UNRATE DCOILWTICO
     ```
 
-* **Run tests**:
-
-  ```bash
-  ./startup.sh pytest -q
-  ```
 
 ### Argument Rules
 
@@ -135,7 +141,7 @@ Future extensions will add additional custom chart scripts under `scripts/`, all
 3. **Invoke** via:
 
    ```bash
-   ./startup.sh python -m scripts.custom_chart --your-args
+   ./startup.sh custom_chart --your-args
    ```
 4. **Optionally** add a Makefile target if desired.
 
@@ -149,5 +155,5 @@ Future extensions will add additional custom chart scripts under `scripts/`, all
 * **Task Command** →
 
   ```bash
-  ./startup.sh --offset 18
+  ./startup.sh lagged_oil_unrate --offset 18
   ```
