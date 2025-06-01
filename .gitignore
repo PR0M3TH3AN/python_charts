@@ -1,6 +1,22 @@
 # Byte-code / venv
 __pycache__/
+*.py[cod]
 venv/
+
+# Editor and OS files
+.idea/
+.vscode/
+.DS_Store
+
+# Build artifacts
+dist/
+build/
+
+# Test caches
+.pytest_cache/
+
+# Generated charts (not version controlled)
+outputs/
 
 # Local data & wheels
 wheelhouse/*.log
