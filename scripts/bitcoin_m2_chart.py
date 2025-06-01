@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """bitcoin_m2_chart.py
 ----------------------
-Plot Bitcoin price (log scale) versus global M2 money supply (as a 100-point index)
-stored in `data/fred.db`. Bitcoin is orange; M2 is green; white background; monthly x-ticks.
+Plot Bitcoin price (log scale) versus global M2 money supply (rebased to 100),
+with M2 shifted forward by 90 days so that both series share the same x-axis.
+Show only data from July 1, 2024 onward. White background, two y-axes on the right,
+monthly x-ticks, and friendly error message if GLOBAL_M2 is missing.
 """
 
 from __future__ import annotations
@@ -45,7 +47,7 @@ def fetch_series(
 def validate_series(
     btc: pd.DataFrame, m2: pd.DataFrame, btc_name: str, m2_name: str
 ) -> None:
-    """Run basic sanity checks on the two series."""
+    """Basic sanity checks on the two series."""
     validate_dataframe(btc, btc_name)
     validate_dataframe(m2, m2_name)
     validate_overlap(btc, m2)
@@ -62,66 +64,175 @@ def plot_bitcoin_m2(
     dpi: int | None = None,
 ) -> plt.Figure:
     """
-    Plot Bitcoin price (log scale) and a rebased (100-point) M2 index on dual axes:
-      • Bitcoin is orange, on a log-scaled left y-axis
-      • Global M2 is green, on a linear right y-axis
-      • White background, monthly x-ticks, with an “empty buffer” past the last date.
+    Plot Bitcoin (log scale) and Global M2 (rebased to 100) on a shared x-axis,
+    with M2 shifted forward by `offset_days` (90 days). Show only data from
+    July 1, 2024 onward. White background, two y-axes on the right, monthly x-ticks.
     """
-    # 1) Determine overlapping date range
-    common_start = max(btc.index.min(), m2.index.min())
-    common_end = min(btc.index.max(), m2.index.max())
 
-    btc_common = btc.loc[common_start:common_end].dropna(subset=["value"])
-    m2_common = m2.loc[common_start:common_end].dropna(subset=["value"])
+    # ──────────────────────────────────────────────────────────────────────────
+    # 1) DROP ANY ROWS WITH NULL "value" BEFORE SHIFTING/REBASE:
+    # ──────────────────────────────────────────────────────────────────────────
+    btc_clean = btc.dropna(subset=["value"])
+    m2_clean = m2.dropna(subset=["value"])
 
-    # 2) Shift M2 by `offset_days`
-    m2_shifted = m2_common.shift(offset_days)
+    # ──────────────────────────────────────────────────────────────────────────
+    # 2) SHIFT M2's INDEX FORWARD by offset_days (90)
+    # ──────────────────────────────────────────────────────────────────────────
+    m2_shifted = m2_clean.copy()
+    m2_shifted.index = m2_shifted.index + pd.Timedelta(days=offset_days)
 
-    # 3) Rebase M2 to a 100-point index
-    #    (so that at the first available date, M2_index = 100)
-    m2_indexed = (m2_shifted["value"] / m2_shifted["value"].iloc[0]) * 100
+    # ──────────────────────────────────────────────────────────────────────────
+    # 3) CROP BOTH SERIES TO START ON JULY 1, 2024 (user request)
+    # ──────────────────────────────────────────────────────────────────────────
+    crop_start = pd.to_datetime("2024-07-01")
+    btc_cropped = btc_clean.loc[btc_clean.index >= crop_start]
+    m2_cropped = m2_shifted.loc[m2_shifted.index >= crop_start]
 
-    # 4) Create figure + axes
+    # ──────────────────────────────────────────────────────────────────────────
+    # 4) FIND OVERLAP WINDOW: plot only dates where BOTH series exist
+    # ──────────────────────────────────────────────────────────────────────────
+    overlap_start = max(btc_cropped.index.min(), m2_cropped.index.min())
+    overlap_end = min(btc_cropped.index.max(), m2_cropped.index.max())
+
+    if overlap_start >= overlap_end:
+        raise ValueError(
+            f"No overlapping range from {crop_start.date()} after shifting M2 by {offset_days} days."
+        )
+
+    btc_overlap = btc_cropped.loc[overlap_start:overlap_end]
+    m2_overlap = m2_cropped.loc[overlap_start:overlap_end]
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # 5) REBASE M2_OVERLAP to base‐100 index
+    # ──────────────────────────────────────────────────────────────────────────
+    first_m2_date = m2_overlap["value"].dropna().index.min()
+    if first_m2_date is None:
+        m2_indexed = pd.Series([], dtype=float)
+    else:
+        first_m2_value = float(m2_overlap.loc[first_m2_date, "value"])
+        m2_indexed = (m2_overlap["value"] / first_m2_value) * 100
+        m2_indexed = m2_indexed.dropna()
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # 6) SET UP FIGURE WITH WHITE BACKGROUND
+    # ──────────────────────────────────────────────────────────────────────────
     fig, ax1 = plt.subplots(figsize=(width, height), dpi=dpi)
-    # (White background is default, so no style override is needed.)
+    fig.patch.set_facecolor("white")
+    ax1.set_facecolor("white")
 
-    # 5) Plot Bitcoin (orange) ON A LOGARITHMIC Y-AXIS
+    # ─── Plot Bitcoin on "ax1" (log scale, orange) ─────────────────────────────
     ax1.plot(
-        btc_common.index,
-        btc_common["value"],
+        btc_overlap.index,
+        btc_overlap["value"],
         label="Bitcoin (USD, log-scale)",
-        color="#f7931a",  # Bitcoin-orange
+        color="#f7931a",
         linewidth=2.0,
     )
-    ax1.set_yscale("log")                     # ← LOG SCALE
+    ax1.set_yscale("log")
     ax1.set_ylabel("Bitcoin Price (USD, log)", color="#333333")
     ax1.tick_params(axis="y", colors="#333333")
-    ax1.grid(axis="y", linestyle="--", alpha=0.3)
+    # Move BTC axis to the right side:
+    ax1.yaxis.set_label_position("right")
+    ax1.yaxis.tick_right()
 
-    # 6) Plot M2 index (green) on a LINEAR right‐hand axis
-    ax2 = ax1.twinx()
-    ax2.plot(
-        m2_indexed.index,
-        m2_indexed,
-        label="Global M2 Index (base 100)",
-        color="#00aa00",  # dark-green for contrast
-        linewidth=2.0,
+    # ─── Plot a horizontal dotted line at the last BTC close ────────────────────
+    last_btc_date = btc_overlap.index.max()
+    last_btc_value = float(btc_overlap.loc[last_btc_date, "value"])
+    ax1.axhline(
+        last_btc_value,
+        color="#f7931a",
+        linestyle=":",
+        linewidth=1.5,
+        alpha=0.9,
     )
-    ax2.set_ylabel("Global M2 Index (linear)", color="#333333")
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # 7) Plot M2 on twin axis "ax2" (linear scale, green) ───────────────────────
+    # ──────────────────────────────────────────────────────────────────────────
+    ax2 = ax1.twinx()
+    if not m2_indexed.empty:
+        ax2.plot(
+            m2_indexed.index,
+            m2_indexed.values,
+            label="Global M2 Index (base 100)",
+            color="#00aa00",
+            linewidth=2.0,
+        )
+    ax2.set_ylabel("Global M2 Index (base 100)", color="#333333")
     ax2.tick_params(axis="y", colors="#333333")
-    # (No grid on ax2 to keep it clean.)
+    # Move M2 axis even further right (so BTC ticks are inner-right, M2 outer-right):
+    ax2.spines["right"].set_position(("axes", 1.08))
 
-    # 7) Extend x‐axis to give “future blank space”
-    x_end_extended = common_end + relativedelta(years=extend_years)
-    ax1.set_xlim(common_start, x_end_extended)
+    # ──────────────────────────────────────────────────────────────────────────
+    # 8) SET Y-TICKS EXACTLY AS IN THE SCREENSHOT
+    # ──────────────────────────────────────────────────────────────────────────
+    # Bitcoin ticks (inner right):
+    btc_ticks = [41100, 45500, 50500, 56500, 62500, 70500, 78000, 86000, 98000, 113000]
+    ax1.set_yticks(btc_ticks)
+    ax1.set_yticklabels([f"{int(tick):,}" for tick in btc_ticks], color="#333333")
 
-    # 8) Monthly x-ticks (e.g., “Aug, Sep, Oct…”)
+    # Global M2 ticks (outer right):
+    m2_ticks = [99.10] + list(range(100, 114))  # [99.10, 100, 101, …, 113]
+    ax2.set_yticks(m2_ticks)
+    ax2.set_yticklabels(
+        [f"{tick:.2f}" if isinstance(tick, float) else f"{tick}" for tick in m2_ticks],
+        color="#333333",
+    )
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # 9) DRAW HORIZONTAL GRID LINES (only on BTC axis)
+    # ──────────────────────────────────────────────────────────────────────────
+    ax1.grid(
+        axis="y",
+        linestyle="--",
+        linewidth=0.7,
+        color="#cccccc",
+        alpha=0.4,
+    )
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # 10) SET X-LIMITS: from overlap_start → overlap_end + extend_years
+    # ──────────────────────────────────────────────────────────────────────────
+    x_end_extended = overlap_end + relativedelta(years=extend_years)
+    ax1.set_xlim(overlap_start, x_end_extended)
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # 11) MONTHLY X-TICKS:
+    #     Major = first of each month (“Jul, Aug, Sep …”),
+    #     Minor = mid-month (no label).
+    # ──────────────────────────────────────────────────────────────────────────
     ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
     ax1.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
     ax1.xaxis.set_minor_locator(mdates.MonthLocator(bymonthday=15))
-    plt.setp(ax1.get_xticklabels(), rotation=0, ha="center")
+    for label in ax1.get_xticklabels():
+        label.set_color("#333333")
+        label.set_rotation(0)
+        label.set_fontsize(10)
 
-    # 9) Combine legends from both axes
+    # ──────────────────────────────────────────────────────────────────────────
+    # 12) ANNOTATE “2025” UNDER THE JANUARY TICK
+    # ──────────────────────────────────────────────────────────────────────────
+    try:
+        jan2025 = pd.to_datetime("2025-01-01")
+        if jan2025 < overlap_start:
+            jan2025 = pd.to_datetime(f"{overlap_start.year + 1}-01-01")
+        xloc = mdates.date2num(jan2025)
+        ax1.annotate(
+            "2025",
+            (xloc, 0),
+            xycoords=("data", "axes fraction"),
+            xytext=(0, -20),
+            textcoords="offset points",
+            ha="center",
+            color="#333333",
+            fontsize=11,
+        )
+    except Exception:
+        pass
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # 13) LEGEND (combine both axes) at top-left
+    # ──────────────────────────────────────────────────────────────────────────
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax1.legend(
@@ -129,10 +240,51 @@ def plot_bitcoin_m2(
         labels1 + labels2,
         loc="upper left",
         frameon=False,
-        fontsize=10,
+        fontsize=11,
     )
 
-    fig.tight_layout()
+    # ──────────────────────────────────────────────────────────────────────────
+    # 14) HEADER TEXT (symbol, price, M2 info) at top-left
+    # ──────────────────────────────────────────────────────────────────────────
+    header_y = 1.02
+    # “Bitcoin / U.S. Dollar · 1D · COINBASE” in gray:
+    ax1.text(
+        0.0,
+        header_y,
+        "Bitcoin / U.S. Dollar · 1D · COINBASE",
+        transform=ax1.transAxes,
+        color="#333333",
+        fontsize=12,
+        weight="bold",
+        va="bottom",
+    )
+    # BTC’s last close and daily change in orange:
+    prev_btc = float(btc_overlap["value"].iloc[-2])
+    change = last_btc_value - prev_btc
+    pct_change = (change / prev_btc) * 100
+    ax1.text(
+        0.0,
+        header_y - 0.035,
+        f"{last_btc_value:,.2f}  {change:+.2f} ({pct_change:+.2f}%)",
+        transform=ax1.transAxes,
+        color="#f7931a",
+        fontsize=11,
+        va="bottom",
+    )
+    # M2 info (“Days Offset = 90” and last M2 index) in green:
+    if not m2_indexed.empty:
+        last_m2_val = m2_indexed.iloc[-1]
+        ax1.text(
+            0.0,
+            header_y - 0.07,
+            f"Global M2 Money Supply // Days Offset = {offset_days}   {last_m2_val:.2f}",
+            transform=ax1.transAxes,
+            color="#00aa00",
+            fontsize=11,
+            va="bottom",
+        )
+
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
     return fig
 
 
@@ -151,7 +303,7 @@ def main(argv: list[str] | None = None) -> plt.Figure:
         help="FRED series name for global M2",
     )
     p.add_argument(
-        "--start", type=str, default="2010-01-01", help="start date YYYY-MM-DD"
+        "--start", type=str, default="2024-01-01", help="start date YYYY-MM-DD"
     )
     p.add_argument(
         "--end",
@@ -162,8 +314,8 @@ def main(argv: list[str] | None = None) -> plt.Figure:
     p.add_argument(
         "--offset",
         type=int,
-        default=94,  # M2 leads by 94 days
-        help="shift M2 by this many days (positive = M2 leads)",
+        default=90,  # shift M2 forward by 90 days (to match TradingView)
+        help="shift M2 by this many days (positive = M2 leads BTC)",
     )
     p.add_argument(
         "--extend-years", type=int, default=1, help="years beyond end date to show"
@@ -195,13 +347,47 @@ def main(argv: list[str] | None = None) -> plt.Figure:
         print(f"Invalid --end date: {args.end}", file=sys.stderr)
         raise SystemExit(1)
 
-    btc, m2 = fetch_series(start_dt, end_dt, args.btc_series, args.m2_series, args.db)
+    # ──────────────────────────────────────────────────────────────────────────
+    # 15) FETCH SERIES
+    # ──────────────────────────────────────────────────────────────────────────
+    try:
+        btc, m2 = fetch_series(start_dt, end_dt, args.btc_series, args.m2_series, args.db)
+    except FileNotFoundError as fnf:
+        print(fnf, file=sys.stderr)
+        sys.exit(1)
 
-    # Drop rows with null “value”
-    btc = btc.dropna(subset=["value"])
-    m2 = m2.dropna(subset=["value"])
+    # If either series is empty, print a friendly message and exit:
+    if btc.empty:
+        print(
+            f"No data found for {args.btc_series} between {args.start} and {args.end}.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
-    validate_series(btc, m2, args.btc_series, args.m2_series)
+    if m2.empty:
+        print(
+            f"No data found for {args.m2_series} between {args.start} and {args.end}.",
+            file=sys.stderr,
+        )
+        print(
+            "Try running:\n"
+            "  python -m scripts.refresh_data --series GLOBAL_M2 --start 2010-01-01",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # 16) VALIDATE (non-empty, no nulls, overlapping)
+    # ──────────────────────────────────────────────────────────────────────────
+    try:
+        validate_series(btc, m2, args.btc_series, args.m2_series)
+    except ValueError as e:
+        print(f"Validation error: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # ──────────────────────────────────────────────────────────────────────────
+    # 17) PLOT
+    # ──────────────────────────────────────────────────────────────────────────
     fig = plot_bitcoin_m2(
         btc,
         m2,
