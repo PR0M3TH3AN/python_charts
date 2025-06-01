@@ -161,6 +161,12 @@ def main(argv: list[str] | None = None) -> plt.Figure:
         raise SystemExit(1)
 
     btc, m2 = fetch_series(start_dt, end_dt, args.btc_series, args.m2_series, args.db)
+
+    # ─── Drop any rows where the FRED tables had NULLs in "value" ──────────────────
+    btc = btc.dropna(subset=["value"])
+    m2 = m2.dropna(subset=["value"])
+    # ────────────────────────────────────────────────────────────────────────────────
+
     validate_series(btc, m2, args.btc_series, args.m2_series)
     fig = plot_bitcoin_m2(
         btc,
