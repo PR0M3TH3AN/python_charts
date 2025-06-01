@@ -70,10 +70,10 @@ python_charts/
 > **Note:** An empty `scripts/__init__.py` file has been added so that Python treats `scripts/` as a package. Because of this, each script can import `common.py` via:
 >
 > ```python
-> from common import fetch_series_db, save_figure, validate_dataframe, validate_overlap
+> from scripts.common import fetch_series_db, save_figure, validate_dataframe, validate_overlap
 > ```
 >
-> rather than `from scripts.common import …`. (\[Real Python]\[1], \[Software Engineering Stack Exchange]\[2])
+> rather than `from common import …`. (\[Real Python]\[1], \[Software Engineering Stack Exchange]\[2])
 
 ---
 
@@ -134,7 +134,7 @@ What happens under the hood:
 2. The script imports `UNRATE` and `DCOILWTICO` from `fred.db` via:
 
    ```python
-   from common import fetch_series_db, save_figure, validate_dataframe, validate_overlap
+   from scripts.common import fetch_series_db, save_figure, validate_dataframe, validate_overlap
    ```
 
    (\[Real Python]\[1], \[Software Engineering Stack Exchange]\[2])
@@ -178,7 +178,7 @@ python -m scripts.custom_chart --series UNRATE DCOILWTICO --start 2000-01-01 --e
 * Internally, `custom_chart.py` invokes:
 
   ```python
-  from common import fetch_series_db, save_figure
+  from scripts.common import fetch_series_db, save_figure
   ```
 
   to load the requested series and save the figure.
@@ -219,7 +219,7 @@ python -m scripts.bitcoin_m2_chart --btc-series CBBTCUSD --m2-series GLOBAL_M2 -
   1. Imports both series from `fred.db` with:
 
      ```python
-     from common import fetch_series_db, save_figure
+     from scripts.common import fetch_series_db, save_figure
      ```
 
      (\[Real Python]\[1], \[Software Engineering Stack Exchange]\[2])
@@ -303,7 +303,7 @@ python-dateutil>=2.8.1
 
 * **ModuleNotFoundError: `scripts.common` not found**
 
-  * Ensure you have added `scripts/__init__.py` and that all `from scripts.common import …` lines have been updated to `from common import …`. Then rerun:
+  * Ensure you have added `scripts/__init__.py` and that all `from common import …` lines have been updated to `from scripts.common import …`. Then rerun:
 
     ```bash
     # Run the default lagged-oil chart via startup.sh
