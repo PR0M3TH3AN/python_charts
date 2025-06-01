@@ -26,22 +26,17 @@ This initial chart is a self‐contained toolkit that:
 git clone https://github.com/your-org/python_charts.git
 cd python_charts
 
-# Activate your virtual environment
+# Create and activate your virtual environment
+python3 -m venv venv
 source venv/bin/activate
-# Install dependencies
-pip install -r requirements.txt
 # Plot the lagged UNRATE vs. Oil chart
 ./startup.sh lagged_oil_unrate --offset 12 --end 2025-05-31 --extend-years 5
-````
+```
 
 This will:
 
 1. Upgrade `pip` & `setuptools` globally
-2. Install required packages from `requirements.txt` via
-
-   ```bash
-   pip install --upgrade -r requirements.txt
-   ```
+2. Install required packages from `requirements.txt` automatically
 3. Download UNRATE & DCOILWTICO into `data/fred.db` if missing (\[Stack Overflow]\[3], \[martinheinz.dev]\[4])
 4. Generate the chart with a 12‐month oil lead, extending the x‐axis by 5 years (\[martinheinz.dev]\[4], \[Real Python]\[1])
 
