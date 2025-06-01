@@ -26,6 +26,15 @@ jobs:
       - name: Install pytest
         run: pip install pytest
 
+      - name: Install linters
+        run: pip install flake8 black isort
+
+      - name: Run linters
+        run: |
+          flake8 .
+          black --check .
+          isort --check .
+
       - name: Run tests
         env:
           PIP_FIND_LINKS: wheelhouse
