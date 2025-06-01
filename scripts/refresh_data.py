@@ -75,7 +75,7 @@ DB_FILE = DB_PATH_DEFAULT
 
 DEFAULT_START = "1948-01-01"  # earliest UNRATE observation
 DEFAULT_END = date.today().isoformat()
-DEFAULT_SERIES = (UNRATE, DCOILWTICO)
+DEFAULT_SERIES = (UNRATE, DCOILWTICO, "CBBTCUSD", "GLOBAL_M2")
 
 
 def main(argv: list[str] | None = None) -> None:
