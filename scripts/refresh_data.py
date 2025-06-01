@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 try:  # pragma: no cover - prefer stdlib when available
     from distutils.version import LooseVersion  # type: ignore
 except ModuleNotFoundError:  # pragma: no cover - Python >=3.12
+    # Work around pandas_datareader < 0.11 on Python 3.12+ without distutils
     from packaging.version import Version
     import types, sys
 
