@@ -8,3 +8,6 @@ wheelhouse/*.md
 # keep wheel files themselves!
 data/*.bak
 repo-context.txt
+
+# Ignore generated charts
+outputs/
