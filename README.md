@@ -26,8 +26,12 @@ This initial chart is a self‐contained toolkit that:
 git clone https://github.com/your-org/python_charts.git
 cd python_charts
 
-# One‐command: install deps, download data, and plot
-./startup.sh --offset 12 --end 2025-05-31 --extend-years 5
+# Activate your virtual environment
+source venv/bin/activate
+# Install dependencies
+pip install -r requirements.txt
+# Plot the lagged UNRATE vs. Oil chart
+./startup.sh lagged_oil_unrate --offset 12 --end 2025-05-31 --extend-years 5
 ````
 
 This will:
@@ -80,8 +84,8 @@ python_charts/
 To refresh (or initially populate) the SQLite database with FRED series, run:
 
 ```bash
-# Either let startup.sh detect the script path:
-./startup.sh scripts/refresh_data.py --series UNRATE CPIAUCSL --start 1960-01-01 --output outputs/chart.png
+# Either let startup.sh dispatch via alias:
+./startup.sh refresh_data --series UNRATE CPIAUCSL --start 1960-01-01 --output outputs/chart.png
 
 # Or invoke it directly as a module (dependencies must already be installed):
 python -m scripts.refresh_data --series UNRATE CPIAUCSL --start 1960-01-01 --output outputs/chart.png
@@ -106,7 +110,7 @@ This command:
 
 ```bash
 # Populate fred.db with four series (UNRATE, WTI, Bitcoin, and Global M2)
-./startup.sh scripts/refresh_data.py --series UNRATE DCOILWTICO CBBTCUSD GLOBAL_M2 --start 1973-01-01
+./startup.sh refresh_data --series UNRATE DCOILWTICO CBBTCUSD GLOBAL_M2 --start 1973-01-01
 ```
 
 ---
@@ -117,7 +121,7 @@ Once data is present, generate the dual‐axis plot of UNRATE vs. lagged WTI oil
 
 ```bash
 # Default: 18‐month lag, default date range (1973‐01‐01 to today), and 3‐year extension
-./startup.sh --offset 18
+./startup.sh lagged_oil_unrate --offset 18
 ```
 
 What happens under the hood:
@@ -143,7 +147,7 @@ What happens under the hood:
 
 ```bash
 # 6‐month lag, start in 1980, end in 2025‐05‐31, extend by 2 years
-./startup.sh --offset 6 --start 1980-01-01 --end 2025-05-31 --extend-years 2
+./startup.sh lagged_oil_unrate --offset 6 --start 1980-01-01 --end 2025-05-31 --extend-years 2
 ```
 
 | Option           | Description                                                              |
@@ -164,8 +168,8 @@ What happens under the hood:
 You can plot any combination of FRED series stored in `data/fred.db` using `scripts/custom_chart.py`. Each column in the DataFrame is plotted on a shared axis.
 
 ```bash
-# Either let startup.sh detect the script path:
-./startup.sh scripts/custom_chart.py --series UNRATE DCOILWTICO --start 2000-01-01 --end 2020-12-31
+# Either let startup.sh dispatch via alias:
+./startup.sh custom_chart --series UNRATE DCOILWTICO --start 2000-01-01 --end 2020-12-31
 
 # Or invoke it directly as a module (dependencies must already be installed):
 python -m scripts.custom_chart --series UNRATE DCOILWTICO --start 2000-01-01 --end 2020-12-31
@@ -193,8 +197,8 @@ Before running `bitcoin_m2_chart.py`, make sure the Bitcoin price
 (`CBBTCUSD`) and global M2 (`GLOBAL_M2`) series exist in `data/fred.db`. If the database is missing these tables, fetch them with `refresh_data.py`:
 
 ```bash
-# Either let startup.sh detect the script path:
-./startup.sh scripts/refresh_data.py --series CBBTCUSD GLOBAL_M2 --start 2010-01-01
+# Either let startup.sh dispatch via alias:
+./startup.sh refresh_data --series CBBTCUSD GLOBAL_M2 --start 2010-01-01
 
 # Or invoke it directly as a module (dependencies must already be installed):
 python -m scripts.refresh_data --series CBBTCUSD GLOBAL_M2 --start 2010-01-01
@@ -203,8 +207,8 @@ python -m scripts.refresh_data --series CBBTCUSD GLOBAL_M2 --start 2010-01-01
 Once the data is present, generate the Bitcoin‐Global M2 overlay chart:
 
 ```bash
-# Either let startup.sh detect the script path:
-./startup.sh scripts/bitcoin_m2_chart.py --btc-series CBBTCUSD --m2-series GLOBAL_M2 --output outputs/chart.png
+# Either let startup.sh dispatch via alias:
+./startup.sh bitcoin_m2 --btc-series CBBTCUSD --m2-series GLOBAL_M2 --output outputs/chart.png
 
 # Or invoke it directly as a module (dependencies must already be installed):
 python -m scripts.bitcoin_m2_chart --btc-series CBBTCUSD --m2-series GLOBAL_M2 --output outputs/chart.png
@@ -303,7 +307,7 @@ python-dateutil>=2.8.1
 
     ```bash
     # Run the default lagged-oil chart via startup.sh
-    ./startup.sh --offset 18
+    ./startup.sh lagged_oil_unrate --offset 18
     ```
 
     or, if you prefer the module form:
@@ -325,8 +329,8 @@ python-dateutil>=2.8.1
   * If `data/fred.db` does not exist (e.g., fresh clone), run:
 
     ````bash
-    # Using startup.sh to detect the script path
-    ./startup.sh scripts/refresh_data.py --series UNRATE DCOILWTICO
+    # Using startup.sh to run via alias
+    ./startup.sh refresh_data --series UNRATE DCOILWTICO
 
     # Or run it as a module directly
     python -m scripts.refresh_data --series UNRATE DCOILWTICO
