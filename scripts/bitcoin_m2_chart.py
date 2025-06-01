@@ -3,8 +3,9 @@
 ----------------------
 Plot Bitcoin price (log scale) versus global M2 money supply (rebased to 100),
 with M2 shifted forward by 90 days so that both series share the same x-axis.
-Show only data from July 1, 2024 onward. White background, two y-axes on the right,
-monthly x-ticks, and friendly error message if GLOBAL_M2 is missing.
+Use the full range provided by ``--start``/``--end``. White background, two y-axes
+on the right, monthly x-ticks, and friendly error message if ``GLOBAL_M2`` is
+missing.
 """
 
 from __future__ import annotations
@@ -65,8 +66,9 @@ def plot_bitcoin_m2(
 ) -> plt.Figure:
     """
     Plot Bitcoin (log scale) and Global M2 (rebased to 100) on a shared x-axis,
-    with M2 shifted forward by `offset_days` (90 days). Show only data from
-    July 1, 2024 onward. White background, two y-axes on the right, monthly x-ticks.
+    with M2 shifted forward by ``offset_days`` (90 days). Data is shown for the
+    entire range provided by ``--start``/``--end``. White background, two
+    y-axes on the right, monthly x-ticks.
     """
 
     # ──────────────────────────────────────────────────────────────────────────
@@ -82,11 +84,10 @@ def plot_bitcoin_m2(
     m2_shifted.index = m2_shifted.index + pd.Timedelta(days=offset_days)
 
     # ──────────────────────────────────────────────────────────────────────────
-    # 3) CROP BOTH SERIES TO START ON JULY 1, 2024 (user request)
+    # 3) USE FULL RANGE FROM --start (no hard-coded crop)
     # ──────────────────────────────────────────────────────────────────────────
-    crop_start = pd.to_datetime("2024-07-01")
-    btc_cropped = btc_clean.loc[btc_clean.index >= crop_start]
-    m2_cropped = m2_shifted.loc[m2_shifted.index >= crop_start]
+    btc_cropped = btc_clean
+    m2_cropped = m2_shifted
 
     # ──────────────────────────────────────────────────────────────────────────
     # 4) FIND OVERLAP WINDOW: plot only dates where BOTH series exist
@@ -96,7 +97,7 @@ def plot_bitcoin_m2(
 
     if overlap_start >= overlap_end:
         raise ValueError(
-            f"No overlapping range from {crop_start.date()} after shifting M2 by {offset_days} days."
+            f"No overlapping range after shifting M2 by {offset_days} days."
         )
 
     btc_overlap = btc_cropped.loc[overlap_start:overlap_end]
