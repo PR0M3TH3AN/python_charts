@@ -133,10 +133,11 @@ What happens under the hood:
    ```
 
    (\[Real Python]\[1], \[Software Engineering Stack Exchange]\[2])
-3. Converts both series to month‐end indices, resamples oil to a monthly average, and aligns their date ranges.
-4. Validates that neither series is empty, contains `NaN`, or has no overlap (raising a `ValueError` if any issue).
-5. Applies the specified lag (e.g., 18 months), then plots UNRATE on the left y‐axis and log‐scaled WTI on the right y‐axis.
-6. Saves the figure to `outputs/lagged_oil_unrate_chart_styled_<timestamp>.png` (unless `--output` is specified). (\[martinheinz.dev]\[4], \[Real Python]\[1])
+3. Converts both series to month-end indices, resamples oil to a monthly average, and aligns their date ranges.
+4. Clamps both series to the last month where `UNRATE` has a value so any trailing NaN is removed.
+5. Validates that neither series is empty, contains `NaN`, or has no overlap (raising a `ValueError` if any issue).
+6. Applies the specified lag (e.g., 18 months), then plots UNRATE on the left y-axis and log-scaled WTI on the right y-axis.
+7. Saves the figure to `outputs/lagged_oil_unrate_chart_styled_<timestamp>.png` (unless `--output` is specified). (\[martinheinz.dev]\[4], \[Real Python]\[1])
 
 #### Customizing the UNRATE vs. Oil Chart
 
@@ -315,9 +316,9 @@ python-dateutil>=2.8.1
 
   * This indicates that the UNRATE DataFrame has missing (NaN) entries. Possible fixes:
 
-    1. Drop nulls within SQL—e.g., run `refresh_data.py --end` using the last fully published month rather than “today” (\[devgem.io]\[7], \[pyOpenSci]\[8])
-    2. Forward‐fill or backward‐fill missing UNRATE values in `common.py` before validation (if appropriate) (\[pyOpenSci]\[8], \[Real Python]\[1])
-    3. Comment out the strict null check in `validate_dataframe(...)` (not recommended for publication‐quality charts) (\[devgem.io]\[7], \[Real Python]\[1])
+    1. Drop nulls within SQL—e.g., run `refresh_data.py --end` using the last fully published month rather than "today" ([devgem.io][7], [pyOpenSci][8])
+    2. Clamp both series to `UNRATE.last_valid_index()` before validation (the approach used in `lagged_oil_unrate_chart_styled.py`).
+    3. Comment out the strict null check in `validate_dataframe(...)` (not recommended for publication-quality charts) ([devgem.io][7], [Real Python][1])
 
 * **Database not found**
 
