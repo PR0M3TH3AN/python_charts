@@ -20,6 +20,50 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# pandas_datareader < 0.11 requires distutils, which was removed in Python 3.12
+try:  # pragma: no cover - prefer stdlib when available
+    from distutils.version import LooseVersion  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - Python >=3.12
+    from packaging.version import Version
+    import types, sys
+
+    class LooseVersion:
+        def __init__(self, v: str | int) -> None:
+            self.vstring = str(v)
+            self.version = Version(self.vstring)
+
+        def __repr__(self) -> str:  # pragma: no cover - debug helper
+            return f"LooseVersion('{self.vstring}')"
+
+        def __lt__(self, other: "LooseVersion") -> bool:
+            return self.version < other.version
+
+        def __le__(self, other: "LooseVersion") -> bool:
+            return self.version <= other.version
+
+        def __eq__(self, other: object) -> bool:
+            if not isinstance(other, LooseVersion):
+                return NotImplemented
+            return self.version == other.version
+
+        def __ne__(self, other: object) -> bool:  # pragma: no cover - unused
+            if not isinstance(other, LooseVersion):
+                return NotImplemented
+            return self.version != other.version
+
+        def __gt__(self, other: "LooseVersion") -> bool:
+            return self.version > other.version
+
+        def __ge__(self, other: "LooseVersion") -> bool:
+            return self.version >= other.version
+
+    version_module = types.ModuleType("version")
+    version_module.LooseVersion = LooseVersion
+    distutils_module = types.ModuleType("distutils")
+    distutils_module.version = version_module
+    sys.modules.setdefault("distutils", distutils_module)
+    sys.modules.setdefault("distutils.version", version_module)
+
 from pandas_datareader.data import DataReader
 import pandas as pd
 
