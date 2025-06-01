@@ -3,10 +3,10 @@
 lagged_oil_unrate_chart_styled.py
 ---------------------------------
 Offline version: reads UNRATE & WTI series from `data/fred.db`
-(populated by `scripts/refresh_data.py`), forward‐fills any NaNs
-in the UNRATE series, drops remaining NaNs in both series to maintain
-purity, validates that both series contain data for the requested period
-(overlap only), and plots them with a configurable lag.
+(populated by `scripts/refresh_data.py`), clamps both series to the
+last month where UNRATE has a valid value, validates that they contain
+data for the requested period (overlap only), and plots them with a
+configurable lag.
 """
 
 from __future__ import annotations
@@ -269,22 +269,16 @@ def main(argv: list[str] | None = None) -> plt.Figure:
         raise SystemExit(1)
 
     # ───────────────────────────────────────────────────────────────────────
-    # Fetch both UNRATE and oil; UNRATE may contain NaNs if the last
-    # month’s data has not yet been published. We forward‐fill UNRATE
-    # (option B), then drop any remaining NaNs in both series.
+    # Fetch both UNRATE and OIL. If UNRATE has a trailing NaN for the most
+    # recent month, clamp both series to its last valid index so that
+    # validation works on officially published data only.
     # ───────────────────────────────────────────────────────────────────────
     unrate, oil = fetch_series(start_dt, end_dt, args.db)
 
-    # Forward‐fill UNRATE to propagate the last known value into any NaN gaps
-    unrate["value"] = unrate["value"].ffill()
-    # Drop any rows where UNRATE is still NaN (e.g., if the entire series started after 'start')
-    unrate = unrate.dropna(subset=["value"])
-
-    # Drop any rows in 'oil' where the value is NaN (ensures no Nulls remain)
-    oil = oil.dropna(subset=["value"])
-
-    # Align oil to only dates present in UNRATE after cleaning
-    oil = oil.loc[oil.index.isin(unrate.index)]
+    last_date = unrate.last_valid_index()
+    if last_date is not None:
+        unrate = unrate.loc[:last_date]
+        oil = oil.loc[:last_date]
 
     validate_series(unrate, oil)
     fig = plot_lagged(
