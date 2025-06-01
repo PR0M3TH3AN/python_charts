@@ -21,7 +21,11 @@ if [[ "${PIP_NO_INDEX:-}" != "1" ]]; then
 fi
 
 echo "📦 Installing dependencies from $REQ_FILE…"
-pip install --upgrade -r "$REQ_FILE"
+pip_args=(--upgrade)
+if [[ -n "${PIP_FIND_LINKS:-}" ]]; then
+  pip_args+=(--find-links "$PIP_FIND_LINKS" --no-index)
+fi
+pip install "${pip_args[@]}" -r "$REQ_FILE"
 
 if [[ ! -f "$DATA_DB" ]]; then
   echo "🔄 data/fred.db missing; running refresh_data…"
