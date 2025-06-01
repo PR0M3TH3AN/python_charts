@@ -1,53 +1,62 @@
 #!/usr/bin/env bash
 # -------------------------------------------------------------------
-# startup.sh  — install deps globally, fetch data, then run command
+# startup.sh — bootstrap environment and dispatch chart aliases
 # Usage:
-#   ./startup.sh [options]       # passes options to default plot script
-#   ./startup.sh <script> [args] # runs specified script with system Python
-# Examples:
-#   ./startup.sh --offset 12 --end 2025-05-31 --extend-years 5
-#   ./startup.sh pytest -q
+#   ./startup.sh [alias] [args]
+# Aliases:
+#   bitcoin_m2       → scripts.bitcoin_m2_chart
+#   lagged_oil_unrate → scripts.lagged_oil_unrate_chart_styled
+#   custom_chart     → scripts.custom_chart
+#   refresh_data     → scripts.refresh_data (optional)
+# If alias is omitted, defaults to lagged_oil_unrate with --offset 18.
 # -------------------------------------------------------------------
 set -euo pipefail
 
 REQ_FILE="requirements.txt"
 DATA_DB="data/fred.db"
-DEFAULT_MODULE="scripts.lagged_oil_unrate_chart_styled"
 
-# 1) Ensure pip & setuptools are up to date
-echo "🛠 Upgrading pip & setuptools…"
-if [[ "${PIP_NO_INDEX:-}" == "1" ]]; then
-  echo "🔒 Offline mode detected; skipping upgrade"
-else
-  pip install --upgrade pip setuptools
+echo "🛠 Upgrading pip…"
+if [[ "${PIP_NO_INDEX:-}" != "1" ]]; then
+  pip install --upgrade pip
 fi
 
-# 2) Install project dependencies globally
 echo "📦 Installing dependencies from $REQ_FILE…"
 pip install --upgrade -r "$REQ_FILE"
 
-# 3) Ensure data exists
 if [[ ! -f "$DATA_DB" ]]; then
-  echo "🔄 Data not found—downloading FRED series…"
+  echo "🔄 data/fred.db missing; running refresh_data…"
   python -m scripts.refresh_data
 fi
 
-# 4) Dispatch to the right command
 if [[ $# -eq 0 ]]; then
-  # no args → run default plot module with offset 18
-  CMD=(python -m "$DEFAULT_MODULE" --offset 18)
-elif [[ "$1" == --* ]]; then
-  # args start with -- → forward to default plot module
-  CMD=(python -m "$DEFAULT_MODULE" "$@")
-else
-  # first token is script or other command
-  if [[ -f "$1" || "$1" == *.py ]]; then
-    # If they explicitly say “scripts/whatever.py …” or “some_test.py …”, run as script
-    CMD=(python "$@")
-  else
-    CMD=("$@")
-  fi
+  exec python -m scripts.lagged_oil_unrate_chart_styled --offset 18
 fi
 
-echo "🚀 Executing: ${CMD[*]}"
-exec "${CMD[@]}"
+alias="$1"
+shift || true
+
+case "$alias" in
+  bitcoin_m2)
+    exec python -m scripts.bitcoin_m2_chart "$@"
+    ;;
+  lagged_oil_unrate)
+    exec python -m scripts.lagged_oil_unrate_chart_styled "$@"
+    ;;
+  custom_chart)
+    exec python -m scripts.custom_chart "$@"
+    ;;
+  refresh_data)
+    exec python -m scripts.refresh_data "$@"
+    ;;
+  --*)
+    exec python -m scripts.lagged_oil_unrate_chart_styled "$alias" "$@"
+    ;;
+  *)
+    if [[ -f "$alias" || "$alias" == *.py ]]; then
+      exec python "$alias" "$@"
+    else
+      exec "$alias" "$@"
+    fi
+    ;;
+esac
+
